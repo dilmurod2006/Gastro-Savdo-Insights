@@ -1,0 +1,24 @@
+# Python virtual environment
+venv/
+ENV/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Streamlit specific
+.streamlit/config.toml
+# .streamlit/secrets.toml  <-- Buni yuklamang, maxfiy parollar shu yerda bo'ladi!
+
+# macOS specific
+.DS_Store
+
+# Data files (Katta bazalarni yuklamaslik uchun)
+data/*.csv
+data/*.xlsx
+
+# Environment variables
+.env
