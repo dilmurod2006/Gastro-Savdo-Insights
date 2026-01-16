@@ -13,11 +13,39 @@ export function TopByCountryPage() {
   const { theme } = useTheme();
   const { data, loading, error, refetch } = useTopByCountry();
 
-  const chartData = data?.map((item, index) => ({
-    name: item.country,
-    value: item.total_revenue,
-    color: CHART_COLORS[index % CHART_COLORS.length],
-  })) || [];
+  // Professional PieChart: TOP 6 + "Boshqalar" guruhi
+  const pieChartData = (() => {
+    if (!data || data.length === 0) return [];
+    
+    // Sort by revenue descending
+    const sorted = [...data].sort((a, b) => b.total_revenue - a.total_revenue);
+    
+    if (sorted.length <= 7) {
+      return sorted.map((item, index) => ({
+        name: item.country,
+        value: item.total_revenue,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+      }));
+    }
+    
+    // TOP 6 + Others
+    const top6 = sorted.slice(0, 6);
+    const others = sorted.slice(6);
+    const othersTotal = others.reduce((sum, item) => sum + item.total_revenue, 0);
+    
+    return [
+      ...top6.map((item, index) => ({
+        name: item.country,
+        value: item.total_revenue,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+      })),
+      {
+        name: `Boshqalar (${others.length})`,
+        value: othersTotal,
+        color: '#6B7280', // Gray for others
+      }
+    ];
+  })();
 
   const barData = data?.slice(0, 10).map((item) => ({
     name: item.country,
@@ -30,35 +58,57 @@ export function TopByCountryPage() {
   const totalCustomers = data?.reduce((sum, c) => sum + c.customer_count, 0) || 0;
   const totalOrders = data?.reduce((sum, c) => sum + c.total_orders, 0) || 0;
 
+  // Add revenue share percentage to data
+  const enrichedData = data?.map((item, index) => ({
+    ...item,
+    revenue_share: totalRevenue > 0 ? (item.total_revenue / totalRevenue) * 100 : 0,
+    rank: index + 1,
+  })) || [];
+
   const columns = [
     {
-      key: 'country',
-      header: 'Mamlakat',
+      key: 'rank',
+      header: '#',
+      width: '50px',
+      align: 'center' as const,
       render: (value: unknown) => (
-        <div className="flex items-center gap-2">
-          <Globe size={16} className="text-primary-500" />
-          <span className="font-medium">{value as string}</span>
-        </div>
+        <span className="text-xs font-bold text-slate-400">{value as number}</span>
       ),
     },
     {
-      key: 'customer_count',
-      header: 'Mijozlar',
-      align: 'center' as const,
-      render: (value: unknown) => formatNumber(value as number),
+      key: 'country',
+      header: 'Mamlakat',
+      render: (value: unknown, row: unknown) => {
+        const item = row as typeof enrichedData[0];
+        return (
+          <div className="flex items-center gap-2">
+            <Globe size={16} className="text-primary-500" />
+            <span className="font-medium">{value as string}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'top_customer',
+      header: 'Eng yaxshi mijoz',
+      render: (value: unknown) => (
+        <span className="text-sm text-slate-300">{value as string}</span>
+      ),
     },
     {
       key: 'total_orders',
       header: 'Buyurtmalar',
       align: 'center' as const,
-      render: (value: unknown) => formatNumber(value as number),
+      render: (value: unknown) => (
+        <span className="font-medium">{formatNumber(value as number)}</span>
+      ),
     },
     {
       key: 'total_revenue',
       header: 'Jami daromad',
       align: 'right' as const,
       render: (value: unknown) => (
-        <span className="font-semibold text-green-600">
+        <span className="font-semibold text-green-500">
           {formatCurrency(value as number)}
         </span>
       ),
@@ -67,7 +117,33 @@ export function TopByCountryPage() {
       key: 'avg_order_value',
       header: "O'rtacha buyurtma",
       align: 'right' as const,
-      render: (value: unknown) => formatCurrency(value as number),
+      render: (value: unknown) => (
+        <span className="text-slate-300">{formatCurrency(value as number)}</span>
+      ),
+    },
+    {
+      key: 'revenue_share',
+      header: 'Ulushi',
+      align: 'right' as const,
+      render: (value: unknown) => {
+        const percent = Number(value);
+        let colorClass = 'text-slate-400';
+        if (percent >= 15) colorClass = 'text-green-400 font-semibold';
+        else if (percent >= 10) colorClass = 'text-blue-400 font-medium';
+        else if (percent >= 5) colorClass = 'text-yellow-400';
+        
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
+                style={{ width: `${Math.min(percent, 100)}%` }}
+              />
+            </div>
+            <span className={colorClass}>{percent.toFixed(1)}%</span>
+          </div>
+        );
+      },
     },
   ];
 
@@ -83,13 +159,13 @@ export function TopByCountryPage() {
           'text-2xl font-bold',
           theme === 'dark' ? 'text-white' : 'text-gray-900'
         )}>
-          Mamlakatlar bo'yicha Mijozlar
+          Har Bir Mamlakat Bo'yicha Eng Yaxshi Mijoz
         </h1>
         <p className={cn(
           'text-sm mt-1',
           theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
         )}>
-          Geografik joylashuv bo'yicha mijoz tahlili
+          Har bir davlat bo'yicha eng ko'p xarid qilgan mijozlar tahlili
         </p>
       </div>
 
@@ -132,10 +208,10 @@ export function TopByCountryPage() {
             </div>
             <div>
               <p className={cn('text-xs', theme === 'dark' ? 'text-slate-400' : 'text-gray-500')}>
-                Jami mijozlar
+                TOP mijozlar
               </p>
               <p className={cn('text-xl font-bold', theme === 'dark' ? 'text-white' : 'text-gray-900')}>
-                {formatNumber(totalCustomers)}
+                {data?.length || 0}
               </p>
             </div>
           </div>
@@ -167,9 +243,9 @@ export function TopByCountryPage() {
             Daromad taqsimoti
           </h3>
           {loading ? (
-            <div className="h-[300px] skeleton rounded-lg" />
+            <div className="h-75 skeleton rounded-lg" />
           ) : (
-            <PieChart data={chartData} donut height={300} />
+            <PieChart data={pieChartData} donut height={300} showLabels />
           )}
         </Card>
 
@@ -198,19 +274,34 @@ export function TopByCountryPage() {
       {/* Table */}
       <Card className="overflow-hidden">
         <div className={cn(
-          'px-6 py-4 border-b',
+          'px-6 py-4 border-b flex items-center justify-between',
           theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
         )}>
-          <h3 className={cn(
-            'text-lg font-semibold',
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          <div>
+            <h3 className={cn(
+              'text-lg font-semibold',
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            )}>
+              Barcha mamlakatlar
+            </h3>
+            <p className={cn(
+              'text-sm mt-0.5',
+              theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
+            )}>
+              Har bir mamlakat uchun eng yaxshi mijoz va daromad ulushi
+            </p>
+          </div>
+          <div className={cn(
+            'text-right',
+            theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
           )}>
-            Barcha mamlakatlar
-          </h3>
+            <p className="text-xs">Jami mamlakatlar</p>
+            <p className="text-xl font-bold text-primary-500">{enrichedData.length}</p>
+          </div>
         </div>
-        <Table<TopCustomerByCountry>
+        <Table
           columns={columns}
-          data={data || []}
+          data={enrichedData}
           loading={loading}
         />
       </Card>

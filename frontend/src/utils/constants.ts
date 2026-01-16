@@ -143,12 +143,15 @@ export const MENU_ITEMS: MenuItem[] = [
 
 // RFM Segments
 export const RFM_SEGMENTS = [
-  { name: 'Champions', color: '#10b981', description: 'Best customers' },
-  { name: 'Loyal', color: '#3b82f6', description: 'Repeat buyers' },
-  { name: 'Promising', color: '#8b5cf6', description: 'Recent with potential' },
-  { name: 'New', color: '#6366f1', description: 'New customers' },
-  { name: 'At Risk', color: '#f59e0b', description: 'Need attention' },
-  { name: 'Lost', color: '#ef4444', description: 'Inactive customers' },
+  { name: 'Champions', color: '#10b981', description: 'Eng yaxshi mijozlar' },
+  { name: 'Loyal Customers', color: '#3b82f6', description: 'Sodiq mijozlar' },
+  { name: 'Potential Loyalist', color: '#8b5cf6', description: 'Potentsial sodiq' },
+  { name: 'New Customers', color: '#6366f1', description: 'Yangi mijozlar' },
+  { name: 'Promising', color: '#14b8a6', description: 'Istiqbolli' },
+  { name: 'Need Attention', color: '#f59e0b', description: 'E\'tibor kerak' },
+  { name: 'At Risk', color: '#f97316', description: 'Xavf ostida' },
+  { name: 'Hibernating', color: '#ef4444', description: 'Uyquda' },
+  { name: 'Lost', color: '#dc2626', description: 'Yo\'qotilgan' },
 ];
 
 // ABC Categories

@@ -53,18 +53,22 @@ class ProductAnalyticsRepository(BaseAnalyticsRepository):
             limit: Number of top products to return
             
         Returns:
-            List of top revenue products
+            List of top revenue products with category and supplier info
         """
         query = """
             SELECT 
                 p.productId as product_id,
                 p.productName as product_name,
+                c.categoryName as category_name,
+                s.companyName as supplier_name,
                 SUM(od.unitPrice * od.quantity * (1 - od.discount)) AS total_revenue,
                 SUM(od.quantity) AS total_quantity_sold,
                 COUNT(DISTINCT od.orderId) AS total_orders
             FROM Product p
+            INNER JOIN Category c ON p.categoryId = c.categoryId
+            INNER JOIN Supplier s ON p.supplierId = s.supplierId
             INNER JOIN OrderDetail od ON p.productId = od.productId
-            GROUP BY p.productId, p.productName
+            GROUP BY p.productId, p.productName, c.categoryName, s.companyName
             ORDER BY total_revenue DESC
             LIMIT %s
         """

@@ -113,7 +113,36 @@ export const analyticsService = {
   // ==================== PRODUCTS ====================
   getTopRevenueProducts: async (limit: number = 10): Promise<ApiResponse<TopRevenueProduct>> => {
     const response = await apiInstance.get(`/products/top-revenue?limit=${limit}`);
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    // Calculate total revenue for percentage
+    const totalRevenue = dataList.reduce((sum: number, item: any) => 
+      sum + (parseFloat(item.total_revenue) || 0), 0);
+
+    const mappedData = dataList.map((item: any, index: number) => {
+      const revenue = parseFloat(item.total_revenue) || 0;
+      return {
+        rank: index + 1,
+        product_id: item.product_id || 0,
+        product_name: item.product_name || 'Unknown',
+        category_name: item.category_name || '',
+        supplier_name: item.supplier_name || '',
+        quantity_sold: parseInt(item.total_quantity_sold) || 0,
+        total_revenue: revenue,
+        order_count: item.total_orders || 0,
+        revenue_percentage: totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Top revenue products retrieved',
+      data: mappedData,
+      count: mappedData.length
+    };
   },
 
   getABCAnalysis: async (): Promise<ApiResponse<ABCAnalysisProduct>> => {
@@ -139,18 +168,107 @@ export const analyticsService = {
   // ==================== CUSTOMERS ====================
   getTopByCountry: async (): Promise<ApiResponse<TopCustomerByCountry>> => {
     const response = await apiInstance.get('/customers/top-by-country');
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    const mappedData = dataList.map((item: any) => {
+      const totalSpent = parseFloat(item.total_spent) || 0;
+      const orderCount = item.order_count || 0;
+      
+      return {
+        country: item.country,
+        total_revenue: totalSpent,
+        customer_count: 1, // API returns top customer per country
+        total_orders: orderCount,
+        avg_order_value: orderCount > 0 ? totalSpent / orderCount : 0,
+        // Legacy fields
+        top_customer: item.company_name,
+        total_amount_spent: totalSpent,
+        order_count: orderCount,
+        running_total: parseFloat(item.running_total) || 0,
+        percentage_of_country: parseFloat(item.percent_of_country) || 0
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Top customers by country retrieved',
+      data: mappedData,
+      count: mappedData.length
+    };
   },
 
   getRFMSegmentation: async (referenceDate?: string): Promise<ApiResponse<RFMCustomer>> => {
     const params = referenceDate ? `?reference_date=${referenceDate}` : '';
     const response = await apiInstance.get(`/customers/rfm-segmentation${params}`);
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    const mappedData = dataList.map((item: any) => ({
+      customer_id: item.cust_id?.toString(),
+      company_name: item.company_name,
+      country: item.country || 'N/A',
+      recency_days: item.recency || 0,
+      frequency: item.frequency || 0,
+      monetary: parseFloat(item.monetary) || 0,
+      r_score: item.r_score || 0,
+      f_score: item.f_score || 0,
+      m_score: item.m_score || 0,
+      segment: item.customer_segment || 'Unknown',
+      rfm_score: item.rfm_segment || `${item.r_score}${item.f_score}${item.m_score}`,
+      recency: item.recency
+    }));
+
+    return {
+      success: true,
+      message: 'RFM segmentation retrieved',
+      data: mappedData,
+      count: mappedData.length
+    };
   },
 
   getRetentionAnalysis: async (): Promise<ApiResponse<RetentionCustomer>> => {
     const response = await apiInstance.get('/customers/retention-analysis');
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    const mappedData = dataList.map((item: any) => {
+      // Map buyer_type from API to frontend format
+      const buyerType = item.buyer_type || '';
+      let mappedBuyerType: 'one_time' | 'repeat' = 'one_time';
+      if (buyerType.includes('Frequent') || buyerType.includes('Regular')) {
+        mappedBuyerType = 'repeat';
+      } else if (item.total_orders > 1) {
+        mappedBuyerType = 'repeat';
+      }
+
+      return {
+        customer_id: item.cust_id?.toString(),
+        company_name: item.company_name,
+        country: item.country || 'N/A',
+        first_order_date: item.first_order_date,
+        last_order_date: item.last_order_date,
+        lifespan_days: item.customer_lifespan_days || 0,
+        total_orders: item.total_orders || 0,
+        total_revenue: 0, // Not provided by API, calculate if needed
+        buyer_type: mappedBuyerType,
+        avg_days_between_orders: parseFloat(item.avg_days_between_orders) || 0,
+        original_buyer_type: item.buyer_type // Keep original for display
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Retention analysis retrieved',
+      data: mappedData,
+      count: mappedData.length
+    };
   },
 
   getDiscountBehavior: async (limit: number = 50): Promise<ApiResponse<DiscountBehaviorCustomer>> => {

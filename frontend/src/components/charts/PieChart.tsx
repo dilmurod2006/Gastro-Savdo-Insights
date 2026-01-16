@@ -35,10 +35,16 @@ export function PieChart({
   const { theme } = useTheme();
 
   const tooltipStyle = {
-    backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
-    border: `1px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`,
-    borderRadius: '8px',
-    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff',
+    border: `2px solid ${theme === 'dark' ? '#475569' : '#cbd5e1'}`,
+    borderRadius: '12px',
+    boxShadow: theme === 'dark' 
+      ? '0 10px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4)' 
+      : '0 10px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    padding: '12px 16px',
+    color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
+    fontSize: '14px',
+    fontWeight: 500,
   };
 
   const formatValue = formatAsAmount ? formatCompactCurrency : (v: number) => v.toLocaleString();
@@ -60,7 +66,7 @@ export function PieChart({
     outerRadius?: number;
     percent?: number;
   }) => {
-    if (!cx || !cy || midAngle === undefined || !innerRadius || !outerRadius || !percent || percent < 0.05) return null;
+    if (!cx || !cy || midAngle === undefined || !innerRadius || !outerRadius || !percent || percent < 0.03) return null;
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -73,10 +79,10 @@ export function PieChart({
         fill="white"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={12}
+        fontSize={11}
         fontWeight={600}
       >
-        {formatPercent(percent * 100, 0)}
+        {formatPercent(percent * 100, 1)}
       </text>
     );
   };
@@ -106,6 +112,15 @@ export function PieChart({
 
         <Tooltip
           contentStyle={tooltipStyle}
+          labelStyle={{ 
+            color: theme === 'dark' ? '#e2e8f0' : '#334155',
+            fontWeight: 600,
+            marginBottom: '4px'
+          }}
+          itemStyle={{ 
+            color: theme === 'dark' ? '#f8fafc' : '#1e293b',
+            fontWeight: 500
+          }}
           formatter={(value, name) => [
             `${formatValue(value as number)} (${formatPercent(((value as number) / total) * 100)})`,
             name,
