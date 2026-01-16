@@ -15,52 +15,82 @@ export function TopRevenuePage() {
     {
       key: 'rank',
       header: 'Rank',
-      width: '80px',
+      width: '7%',
       align: 'center' as const,
-      render: (value: unknown) => <span className="font-bold text-gray-500">#{String(value)}</span>
+      render: (value: unknown) => (
+        <span className="font-bold text-gray-500 dark:text-gray-400">#{String(value)}</span>
+      )
     },
     {
       key: 'product_name',
       header: 'Product Name',
-      render: (value: unknown) => <span className="font-medium text-gray-900 dark:text-white">{String(value)}</span>
+      width: '22%',
+      render: (value: unknown) => (
+        <span className="font-semibold text-gray-900 dark:text-white">{String(value)}</span>
+      )
     },
     {
       key: 'category_name',
       header: 'Category',
+      width: '15%',
+      render: (value: unknown) => (
+        <span className="text-gray-600 dark:text-gray-300">{String(value) || '—'}</span>
+      )
     },
     {
       key: 'total_revenue',
       header: 'Revenue',
+      width: '16%',
       align: 'right' as const,
-      render: (value: unknown) => <span className="font-semibold text-green-600 dark:text-green-400">${Number(value).toLocaleString()}</span>
+      render: (value: unknown) => (
+        <span className="font-bold text-emerald-500">
+          ${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+      )
     },
     {
       key: 'quantity_sold',
       header: 'Sold',
+      width: '12%',
       align: 'right' as const,
-      render: (value: unknown) => Number(value).toLocaleString()
+      render: (value: unknown) => (
+        <span className="text-gray-700 dark:text-gray-300 font-medium">
+          {Number(value).toLocaleString()}
+        </span>
+      )
     },
     {
       key: 'order_count',
       header: 'Orders',
+      width: '10%',
       align: 'right' as const,
+      render: (value: unknown) => (
+        <span className="text-gray-700 dark:text-gray-300 font-medium">
+          {Number(value).toLocaleString()}
+        </span>
+      )
     },
     {
       key: 'revenue_percentage',
       header: '% Share',
+      width: '18%',
       align: 'right' as const,
-      render: (value: unknown) => 
-        <div className="flex items-center justify-end gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {Number(value).toFixed(1)}%
-          </span>
-          <div className="w-16 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary-500 rounded-full" 
-              style={{ width: `${value}%` }}
-            />
+      render: (value: unknown) => {
+        const percent = Number(value);
+        return (
+          <div className="flex items-center justify-end gap-3">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300 min-w-[45px] text-right">
+              {percent.toFixed(1)}%
+            </span>
+            <div className="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary-500 rounded-full transition-all duration-300" 
+                style={{ width: `${Math.min(percent * 4, 100)}%` }}
+              />
+            </div>
           </div>
-        </div>
+        );
+      }
     }
   ];
 

@@ -43,7 +43,7 @@ export function Table<T extends object>({
   if (loading) {
     return (
       <div className={cn('overflow-x-auto', className)}>
-        <table className="w-full">
+        <table className="w-full" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr className={cn(
               'border-b',
@@ -56,7 +56,7 @@ export function Table<T extends object>({
                     'px-4 py-3',
                     theme === 'dark' ? 'bg-slate-800' : 'bg-gray-50'
                   )}
-                  style={{ width: col.width }}
+                  style={{ width: col.width, minWidth: col.width, maxWidth: col.width }}
                 >
                   <div className="h-4 skeleton rounded" />
                 </th>
@@ -72,8 +72,12 @@ export function Table<T extends object>({
                   theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
                 )}
               >
-                {columns.map((_, colIndex) => (
-                  <td key={colIndex} className="px-4 py-3">
+                {columns.map((col, colIndex) => (
+                  <td 
+                    key={colIndex} 
+                    className="px-4 py-3"
+                    style={{ width: col.width, minWidth: col.width, maxWidth: col.width }}
+                  >
                     <div className="h-4 skeleton rounded w-3/4" />
                   </td>
                 ))}
@@ -99,7 +103,7 @@ export function Table<T extends object>({
 
   return (
     <div className={cn('overflow-x-auto', className)}>
-      <table className="w-full">
+      <table className="w-full" style={{ tableLayout: 'fixed' }}>
         <thead className={stickyHeader ? 'sticky top-0 z-10' : ''}>
           <tr className={cn(
             'border-b',
@@ -116,7 +120,7 @@ export function Table<T extends object>({
                     ? 'bg-slate-800 text-slate-300' 
                     : 'bg-gray-50 text-gray-600'
                 )}
-                style={{ width: col.width }}
+                style={{ width: col.width, minWidth: col.width, maxWidth: col.width }}
               >
                 {col.header}
               </th>
@@ -148,6 +152,7 @@ export function Table<T extends object>({
                       col.align === 'right' && 'text-right',
                       theme === 'dark' ? 'text-slate-300' : 'text-gray-700'
                     )}
+                    style={{ width: col.width, minWidth: col.width, maxWidth: col.width }}
                   >
                     {col.render ? col.render(value, row, rowIndex) : String(value ?? '')}
                   </td>

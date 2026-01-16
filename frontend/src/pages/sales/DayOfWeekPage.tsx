@@ -32,8 +32,36 @@ export function DayOfWeekPage() {
   const { theme } = useTheme();
   const { data, loading, error, refetch } = useDayOfWeek();
 
-  // Sort by day of week
-  const sortedData = data?.slice().sort((a, b) => a.day_of_week - b.day_of_week) || [];
+  // Normalize API data: parse numbers, fill missing days
+  const apiData = (data || []).map((d) => ({
+    day_of_week: d.day_of_week,
+    day_name: d.day_name,
+    total_orders: d.total_orders ?? d.order_count ?? 0,
+    order_count: d.total_orders ?? d.order_count ?? 0,
+    unique_customers: d.unique_customers ?? 0,
+    total_revenue: typeof d.total_revenue === 'string' ? parseFloat(d.total_revenue) : (d.total_revenue ?? 0),
+    avg_order_value: typeof d.avg_order_value === 'string' ? parseFloat(d.avg_order_value) : (d.avg_order_value ?? 0),
+    order_percentage: typeof d.order_percentage === 'string' ? parseFloat(d.order_percentage) : (d.order_percentage ?? 0),
+    percentage_of_total: typeof d.order_percentage === 'string' ? parseFloat(d.order_percentage) : (d.percentage_of_total ?? 0),
+    revenue_rank: d.revenue_rank ?? 0,
+  }));
+
+  // Ensure all 7 days are present (1-7), fill missing with zeros
+  const allDays = Array.from({ length: 7 }, (_, i) => i + 1);
+  const sortedData = allDays.map((dow) =>
+    apiData.find((d) => d.day_of_week === dow) || {
+      day_of_week: dow,
+      day_name: DAY_NAMES[dow],
+      total_orders: 0,
+      order_count: 0,
+      unique_customers: 0,
+      total_revenue: 0,
+      avg_order_value: 0,
+      order_percentage: 0,
+      percentage_of_total: 0,
+      revenue_rank: 0,
+    }
+  );
 
   // Chart data
   const barData = sortedData.map((d) => ({
@@ -51,8 +79,15 @@ export function DayOfWeekPage() {
   // Summary
   const totalRevenue = sortedData.reduce((sum, d) => sum + d.total_revenue, 0);
   const totalOrders = sortedData.reduce((sum, d) => sum + d.order_count, 0);
-  const bestDay = sortedData.reduce((best, d) => (d.total_revenue > (best?.total_revenue || 0) ? d : best), sortedData[0]);
-  const worstDay = sortedData.reduce((worst, d) => (d.total_revenue < (worst?.total_revenue || Infinity) ? d : worst), sortedData[0]);
+  // Find best and worst day (do not allow both to be the same day)
+  let bestDay = sortedData[0];
+  let worstDay = sortedData[0];
+  sortedData.forEach((d) => {
+    if (d.total_revenue > bestDay.total_revenue) bestDay = d;
+    if (d.total_revenue < worstDay.total_revenue) worstDay = d;
+  });
+  // If best and worst are the same (all zeros), only show best
+  const showWorst = bestDay.day_of_week !== worstDay.day_of_week;
 
   const columns = [
     {
@@ -114,7 +149,7 @@ export function DayOfWeekPage() {
       align: 'center' as const,
       render: (_value: unknown, row: DayOfWeekPattern) => {
         const isBest = bestDay && row.day_of_week === bestDay.day_of_week;
-        const isWorst = worstDay && row.day_of_week === worstDay.day_of_week;
+        const isWorst = showWorst && worstDay && row.day_of_week === worstDay.day_of_week;
         if (isBest) return <Badge variant="success">Eng yaxshi</Badge>;
         if (isWorst) return <Badge variant="danger">Eng past</Badge>;
         return null;

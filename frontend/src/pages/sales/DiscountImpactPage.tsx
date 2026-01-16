@@ -4,23 +4,71 @@ import { Card, Table, Badge, ErrorState } from '@/components/ui';
 import { PieChart } from '@/components/charts';
 import { useTheme } from '@/contexts';
 import { useDiscountImpact } from '@/hooks';
+import { useMemo } from 'react';
 import { cn } from '@/utils/helpers';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters';
 import type { DiscountImpact } from '@/types';
 
 export function DiscountImpactPage() {
   const { theme } = useTheme();
-  const { data, loading, error, refetch } = useDiscountImpact();
+  const { data: rawData, loading, error, refetch } = useDiscountImpact();
 
-  // Summary
-  const withDiscount = data?.find((d) => d.has_discount);
-  const withoutDiscount = data?.find((d) => !d.has_discount);
-
-  const pieData = data?.map((d) => ({
-    name: d.has_discount ? 'Chegirmali' : 'Chegirmasiz',
-    value: d.total_revenue,
-    color: d.has_discount ? '#f59e0b' : '#10b981',
-  })) || [];
+  // Group and aggregate API data by has_discount (derived)
+  const { withDiscount, withoutDiscount, pieData, tableData } = useMemo(() => {
+    if (!rawData) return {
+      withDiscount: undefined,
+      withoutDiscount: undefined,
+      pieData: [],
+      tableData: [],
+    };
+    // Derive has_discount from total_discount or discount_category
+    const mapped = rawData.map((d) => {
+      const total_discount = d.total_discount ?? d.total_discount_given ?? 0;
+      const discount_category = d.discount_category ?? '';
+      // Chegirmali: total_discount > 0 yoki discount_category != 'Low/No Discount'
+      const has_discount = (parseFloat(total_discount) > 0) || (discount_category && discount_category !== 'Low/No Discount');
+      return { ...d, has_discount };
+    });
+    // Group by has_discount
+    const groups = { true: [], false: [] };
+    for (const d of mapped) {
+      groups[d.has_discount ? 'true' : 'false'].push(d);
+    }
+    // Aggregate for summary and table
+    function aggregate(list, hasDiscount) {
+      if (!list.length) return {
+        has_discount: hasDiscount,
+        total_orders: list.length,
+        total_revenue: 0,
+        avg_order_value: 0,
+        total_discount_given: 0,
+        avg_discount_percent: 0,
+      };
+      const total_orders = list.length;
+      const total_revenue = list.reduce((s, d) => s + (d.net_amount ? parseFloat(d.net_amount) : d.total_revenue ? parseFloat(d.total_revenue) : 0), 0);
+      const total_discount_given = list.reduce((s, d) => s + (d.total_discount ? parseFloat(d.total_discount) : d.total_discount_given ? parseFloat(d.total_discount_given) : 0), 0);
+      const avg_order_value = total_orders ? total_revenue / total_orders : 0;
+      const avg_discount_percent = list.length ? list.reduce((s, d) => s + (d.avg_discount_percent ? parseFloat(d.avg_discount_percent) : 0), 0) / list.length : 0;
+      return {
+        has_discount: hasDiscount,
+        total_orders,
+        total_revenue,
+        avg_order_value,
+        total_discount_given,
+        avg_discount_percent,
+      };
+    }
+    const withDiscount = aggregate(groups.true, true);
+    const withoutDiscount = aggregate(groups.false, false);
+    // Pie chart data
+    const pieData = [
+      { name: 'Chegirmali', value: withDiscount.total_revenue, color: '#f59e0b' },
+      { name: 'Chegirmasiz', value: withoutDiscount.total_revenue, color: '#10b981' },
+    ];
+    // Table data
+    const tableData = [withDiscount, withoutDiscount];
+    return { withDiscount, withoutDiscount, pieData, tableData };
+  }, [rawData]);
 
   const columns = [
     {
@@ -303,7 +351,7 @@ export function DiscountImpactPage() {
         </div>
         <Table<DiscountImpact>
           columns={columns}
-          data={data || []}
+          data={tableData}
           loading={loading}
         />
       </Card>

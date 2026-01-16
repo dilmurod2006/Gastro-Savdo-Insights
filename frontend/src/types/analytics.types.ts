@@ -47,30 +47,29 @@ export interface ABCAnalysisProduct {
   product_id: number;
   product_name: string;
   category_name: string;
-  supplier_name: string;
   total_revenue: number;
+  revenue_rank: number;
   cumulative_revenue: number;
   revenue_percentage: number;
   cumulative_percentage: number;
-  abc_category: 'A' | 'B' | 'C';
+  abc_category: string;
 }
 
 export interface MarketBasketItem {
   product_1: string;
   product_2: string;
-  occurrence_count: number;
-  support_percentage: number;
+  times_bought_together: number;
+  support_percent: number;
 }
 
 export interface DiscontinuedProduct {
-  // Check backend actual response or infer from usage
-  product_id: number;
-  product_name: string;
-  category_name: string;
-  discontinued: boolean;
+  product_status: string;
+  product_count: number;
   total_orders: number;
-  units_sold: number;
+  total_units_sold: number;
   total_revenue: number;
+  avg_revenue_per_product: number;
+  avg_discount_given: number;
 }
 
 // ==================== CUSTOMERS ====================
@@ -139,15 +138,13 @@ export interface DiscountBehaviorCustomer {
 // ==================== EMPLOYEES ====================
 export interface EmployeeMonthlySales {
   employee_id: number;
-  first_name: string;
-  last_name: string;
-  month: number; 
-  total_sales: number;
+  employee_name: string;
+  title: string;
+  order_year: number;
+  order_month: number;
   total_orders: number;
+  monthly_revenue: number;
   avg_order_value: number;
-  // Legacy
-  full_name?: string;
-  monthly_revenue?: number;
 }
 
 export interface EmployeeHierarchy {
@@ -175,16 +172,16 @@ export interface EmployeeHierarchy {
 
 // ==================== SALES ====================
 export interface YoYGrowth {
-  year: number;
-  month: number;
-  current_year_sales: number;
-  previous_year_sales: number;
-  growth_rate: number;
-  // Legacy or alternative properties
-  current_revenue?: number;
-  previous_year_revenue?: number;
-  yoy_growth_pct?: number;
-  moving_average_3m?: number;
+  sales_month: string; // Format: "2006-07"
+  year: number; // Computed from sales_month
+  month: number; // Computed from sales_month
+  revenue: number;
+  prev_year_revenue: number | null;
+  yoy_growth_percent: number | null;
+  moving_avg_3month: number;
+  ytd_revenue: number;
+  // Computed for display
+  absolute_difference: number | null;
 }
 
 export interface DayOfWeekPattern {

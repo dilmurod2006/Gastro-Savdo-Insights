@@ -147,7 +147,36 @@ export const analyticsService = {
 
   getABCAnalysis: async (): Promise<ApiResponse<ABCAnalysisProduct>> => {
     const response = await apiInstance.get('/products/abc-analysis');
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    // Calculate total revenue for percentage
+    const totalRevenue = dataList.reduce((sum: number, item: any) => 
+      sum + (parseFloat(item.total_revenue) || 0), 0);
+
+    const mappedData = dataList.map((item: any) => {
+      const revenue = parseFloat(item.total_revenue) || 0;
+      return {
+        product_id: item.product_id || 0,
+        product_name: item.product_name || 'Unknown',
+        category_name: item.category_name || '',
+        total_revenue: revenue,
+        revenue_rank: item.revenue_rank || 0,
+        cumulative_revenue: parseFloat(item.cumulative_revenue) || 0,
+        revenue_percentage: totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0,
+        cumulative_percentage: parseFloat(item.cumulative_percent) || 0,
+        abc_category: item.abc_category || 'C'
+      };
+    });
+
+    return {
+      success: true,
+      message: 'ABC analysis retrieved',
+      data: mappedData,
+      count: mappedData.length
+    };
   },
 
   getMarketBasket: async (
@@ -157,12 +186,49 @@ export const analyticsService = {
     const response = await apiInstance.get(
       `/products/market-basket?min_occurrences=${minOccurrences}&limit=${limit}`
     );
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    const mappedData = dataList.map((item: any) => ({
+      product_1: item.product_name1 || 'Unknown',
+      product_2: item.product_name2 || 'Unknown',
+      times_bought_together: parseInt(item.times_bought_together) || 0,
+      support_percent: parseFloat(item.support_percent) || 0
+    }));
+
+    return {
+      success: true,
+      message: 'Market basket analysis retrieved',
+      data: mappedData,
+      count: mappedData.length
+    };
   },
 
   getDiscontinuedAnalysis: async (): Promise<ApiResponse<DiscontinuedProduct>> => {
     const response = await apiInstance.get('/products/discontinued-analysis');
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    const mappedData = dataList.map((item: any) => ({
+      product_status: item.product_status || 'Unknown',
+      product_count: parseInt(item.product_count) || 0,
+      total_orders: parseInt(item.total_orders) || 0,
+      total_units_sold: parseInt(item.total_units_sold) || 0,
+      total_revenue: parseFloat(item.total_revenue) || 0,
+      avg_revenue_per_product: parseFloat(item.avg_revenue_per_product) || 0,
+      avg_discount_given: parseFloat(item.avg_discount_given) || 0
+    }));
+
+    return {
+      success: true,
+      message: 'Discontinued analysis retrieved',
+      data: mappedData,
+      count: mappedData.length
+    };
   },
 
   // ==================== CUSTOMERS ====================
@@ -306,7 +372,32 @@ export const analyticsService = {
   // ==================== EMPLOYEES ====================
   getEmployeeMonthlySales: async (): Promise<ApiResponse<EmployeeMonthlySales>> => {
     const response = await apiInstance.get('/employees/monthly-sales');
-    return response.data;
+    
+    // Map backend response to frontend interface
+    const rawData = response.data.data || response.data;
+    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+    const mappedData = dataList.map((item: any) => ({
+      employee_id: item.employee_id || 0,
+      employee_name: item.employee_name || 'Unknown',
+      title: item.title || '',
+      order_year: item.order_year || 0,
+      order_month: item.order_month || 0,
+      total_orders: parseInt(item.total_orders) || 0,
+      monthly_revenue: parseFloat(item.monthly_revenue) || 0,
+      avg_order_value: parseFloat(item.avg_order_value) || 0
+    }));
+
+    // Get unique years from data
+    const years = [...new Set(mappedData.map((item: any) => item.order_year))].sort((a: number, b: number) => b - a);
+
+    return {
+      success: true,
+      message: 'Employee monthly sales retrieved',
+      data: mappedData,
+      count: mappedData.length,
+      years: years
+    };
   },
 
   getEmployeeHierarchy: async (): Promise<ApiResponse<EmployeeHierarchy>> => {
@@ -315,9 +406,39 @@ export const analyticsService = {
   },
 
   // ==================== SALES ====================
-  getYoYGrowth: async (): Promise<ApiResponse<YoYGrowth>> => {
+  getYoYGrowth: async (): Promise<ApiResponse<YoYGrowth[]>> => {
     const response = await apiInstance.get('/sales/yoy-growth');
-    return response.data;
+    const rawData = response.data;
+    
+    // Extract data array
+    const dataList = rawData?.data || rawData || [];
+    
+    // Map API fields to frontend interface
+    const mappedData: YoYGrowth[] = dataList.map((item: Record<string, unknown>) => {
+      const salesMonth = String(item.sales_month || '');
+      const [yearStr, monthStr] = salesMonth.split('-');
+      const revenue = parseFloat(String(item.revenue || 0));
+      const prevYearRevenue = item.prev_year_revenue != null ? parseFloat(String(item.prev_year_revenue)) : null;
+      const absoluteDiff = prevYearRevenue != null ? revenue - prevYearRevenue : null;
+      
+      return {
+        sales_month: salesMonth,
+        year: parseInt(yearStr) || 0,
+        month: parseInt(monthStr) || 0,
+        revenue,
+        prev_year_revenue: prevYearRevenue,
+        yoy_growth_percent: item.yoy_growth_percent != null ? parseFloat(String(item.yoy_growth_percent)) : null,
+        moving_avg_3month: parseFloat(String(item.moving_avg_3month || 0)),
+        ytd_revenue: parseFloat(String(item.ytd_revenue || 0)),
+        absolute_difference: absoluteDiff,
+      };
+    });
+    
+    return {
+      success: rawData?.success ?? true,
+      message: rawData?.message ?? 'Success',
+      data: mappedData,
+    };
   },
 
   getDayOfWeekPatterns: async (): Promise<ApiResponse<DayOfWeekPattern>> => {

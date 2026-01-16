@@ -21,22 +21,30 @@ export function TerritoryPage() {
   const [year, setYear] = useState<number | ''>('');
   const { data, loading, error, refetch } = useTerritoryPerformance();
 
-  // Chart data
-  const pieData = data?.map((d, idx) => ({
-    name: d.region,
-    value: d.total_revenue,
-    color: CHART_COLORS[idx % CHART_COLORS.length],
-  })) || [];
+  // Chart data (safe checks)
+  const pieData = Array.isArray(data)
+    ? data.map((d, idx) => ({
+        name: d.region,
+        value: d.total_revenue,
+        color: CHART_COLORS[idx % CHART_COLORS.length],
+      }))
+    : [];
 
-  const barData = data?.slice(0, 10).map((d) => ({
-    name: d.region.length > 15 ? d.region.slice(0, 15) + '...' : d.region,
-    value: d.total_revenue,
-  })) || [];
+  const barData = Array.isArray(data)
+    ? data.slice(0, 10).map((d) => ({
+        name: d.region.length > 15 ? d.region.slice(0, 15) + '...' : d.region,
+        value: d.total_revenue,
+      }))
+    : [];
 
   // Summary
-  const totalRevenue = data?.reduce((sum, d) => sum + d.total_revenue, 0) || 0;
-  const totalOrders = data?.reduce((sum, d) => sum + d.total_orders, 0) || 0;
-  const topTerritory = data?.[0];
+  const totalRevenue = Array.isArray(data)
+    ? data.reduce((sum, d) => sum + d.total_revenue, 0)
+    : 0;
+  const totalOrders = Array.isArray(data)
+    ? data.reduce((sum, d) => sum + d.total_orders, 0)
+    : 0;
+  const topTerritory = Array.isArray(data) && data.length > 0 ? data[0] : undefined;
 
   const columns = [
     {
@@ -138,7 +146,7 @@ export function TerritoryPage() {
                 Hududlar
               </p>
               <p className={cn('text-xl font-bold', theme === 'dark' ? 'text-white' : 'text-gray-900')}>
-                {data?.length || 0}
+                {Array.isArray(data) ? data.length : 0}
               </p>
             </div>
           </div>
@@ -200,7 +208,7 @@ export function TerritoryPage() {
             Daromad taqsimoti
           </h3>
           {loading ? (
-            <div className="h-[300px] skeleton rounded-lg" />
+            <div className="h-75 skeleton rounded-lg" />
           ) : (
             <PieChart data={pieData} donut height={300} />
           )}
@@ -214,7 +222,7 @@ export function TerritoryPage() {
             TOP 10 hududlar
           </h3>
           {loading ? (
-            <div className="h-[300px] skeleton rounded-lg" />
+            <div className="h-75 skeleton rounded-lg" />
           ) : (
             <BarChart
               data={barData}
@@ -242,7 +250,7 @@ export function TerritoryPage() {
         </div>
         <Table<TerritoryPerformance>
           columns={columns}
-          data={data || []}
+          data={Array.isArray(data) ? data : []}
           loading={loading}
         />
       </Card>
