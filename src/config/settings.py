@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     Ilova sozlamalari.
     Barcha muhit o'zgaruvchilarini .env faylidan o'qiydi.
     """
+    # ==================== Allowded URLS ====================
+    main_url: str = Field(default="", alias="MAINURL")
 
     # ==================== Database Configuration ====================
     db_host: str = Field(default="localhost", alias="DB_HOST")
