@@ -615,6 +615,7 @@ class SupplierAnalyticsRepository(BaseAnalyticsRepository):
             )
             SELECT 
                 sd.category_name,
+                sd.supplier_id,
                 sd.supplier_name,
                 sd.supplier_country,
                 sd.product_count,

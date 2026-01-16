@@ -1,0 +1,1 @@
+export { EfficiencyPage } from './EfficiencyPage';

@@ -1,0 +1,2 @@
+export { MonthlySalesPage } from './MonthlySalesPage';
+
