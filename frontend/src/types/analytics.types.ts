@@ -195,6 +195,9 @@ export interface DayOfWeekPattern {
   unique_customers?: number;
   revenue?: number;
   order_pct?: number;
+  day_name?: string;
+  revenue_rank?: number;
+  order_percentage?: number | string;
 }
 
 export interface DiscountImpact {
@@ -270,12 +273,12 @@ export interface CategoryMonthlySales {
 }
 
 export interface CategoryCountryBreakdown {
+  country: string;
+  category_name: string;
   order_count: number;
+  total_revenue: number;
   category_percentage: number;
   country_percentage: number;
-  // Legacy
-  category?: string;
-  sales_amount?: number;
 }
 
 // ==================== SUPPLIERS ====================

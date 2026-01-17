@@ -18,18 +18,20 @@ const YEAR_OPTIONS = [
 
 export function PerformancePage() {
   const { theme } = useTheme();
-  const [year, setYear] = useState<number | ''>('');
-  const { data, loading, error, refetch } = useSupplierPerformance(year || undefined);
+  // Year filtering is not yet supported by the backend endpoint (it aggregates all time)
+  // so we keep the state for UI but don't pass it as minOrders
+  const [year, setYear] = useState<number | ''>(''); 
+  const { data, loading, error, refetch } = useSupplierPerformance(10); // default minOrders=10
 
   // Chart data
   const pieData = data?.slice(0, 8).map((d, idx) => ({
-    name: d.company_name.length > 20 ? d.company_name.slice(0, 20) + '...' : d.company_name,
+    name: (d.company_name || 'Noma\'lum').length > 20 ? (d.company_name || 'Noma\'lum').slice(0, 20) + '...' : (d.company_name || 'Noma\'lum'),
     value: d.total_revenue,
     color: CHART_COLORS[idx % CHART_COLORS.length],
   })) || [];
 
   const barData = data?.slice(0, 10).map((d) => ({
-    name: d.company_name.length > 15 ? d.company_name.slice(0, 15) + '...' : d.company_name,
+    name: (d.company_name || 'Noma\'lum').length > 15 ? (d.company_name || 'Noma\'lum').slice(0, 15) + '...' : (d.company_name || 'Noma\'lum'),
     value: d.total_revenue,
     products: d.product_count,
   })) || [];

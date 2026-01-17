@@ -24,18 +24,18 @@ export function DiscountImpactPage() {
     // Derive has_discount from total_discount or discount_category
     const mapped = rawData.map((d) => {
       const total_discount = d.total_discount ?? d.total_discount_given ?? 0;
-      const discount_category = d.discount_category ?? '';
+      const discount_category = d.category ?? '';
       // Chegirmali: total_discount > 0 yoki discount_category != 'Low/No Discount'
-      const has_discount = (parseFloat(total_discount) > 0) || (discount_category && discount_category !== 'Low/No Discount');
+      const has_discount = (Number(total_discount) > 0) || (discount_category && discount_category !== 'Low/No Discount');
       return { ...d, has_discount };
     });
     // Group by has_discount
-    const groups = { true: [], false: [] };
+    const groups: Record<string, any[]> = { true: [], false: [] };
     for (const d of mapped) {
       groups[d.has_discount ? 'true' : 'false'].push(d);
     }
     // Aggregate for summary and table
-    function aggregate(list, hasDiscount) {
+    function aggregate(list: any[], hasDiscount: boolean) {
       if (!list.length) return {
         has_discount: hasDiscount,
         total_orders: list.length,
@@ -45,10 +45,10 @@ export function DiscountImpactPage() {
         avg_discount_percent: 0,
       };
       const total_orders = list.length;
-      const total_revenue = list.reduce((s, d) => s + (d.net_amount ? parseFloat(d.net_amount) : d.total_revenue ? parseFloat(d.total_revenue) : 0), 0);
-      const total_discount_given = list.reduce((s, d) => s + (d.total_discount ? parseFloat(d.total_discount) : d.total_discount_given ? parseFloat(d.total_discount_given) : 0), 0);
+      const total_revenue = list.reduce((s: number, d: any) => s + (d.net_amount ? parseFloat(d.net_amount) : d.total_revenue ? parseFloat(d.total_revenue) : 0), 0);
+      const total_discount_given = list.reduce((s: number, d: any) => s + (d.total_discount ? parseFloat(d.total_discount) : d.total_discount_given ? parseFloat(d.total_discount_given) : 0), 0);
       const avg_order_value = total_orders ? total_revenue / total_orders : 0;
-      const avg_discount_percent = list.length ? list.reduce((s, d) => s + (d.avg_discount_percent ? parseFloat(d.avg_discount_percent) : 0), 0) / list.length : 0;
+      const avg_discount_percent = list.length ? list.reduce((s: number, d: any) => s + (d.avg_discount_percent ? parseFloat(d.avg_discount_percent) : 0), 0) / list.length : 0;
       return {
         has_discount: hasDiscount,
         total_orders,

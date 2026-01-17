@@ -7,7 +7,6 @@ import { useTopByCountry } from '@/hooks';
 import { cn } from '@/utils/helpers';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import { CHART_COLORS } from '@/utils/constants';
-import type { TopCustomerByCountry } from '@/types';
 
 export function TopByCountryPage() {
   const { theme } = useTheme();
@@ -55,7 +54,6 @@ export function TopByCountryPage() {
 
   // Top stats
   const totalRevenue = data?.reduce((sum, c) => sum + c.total_revenue, 0) || 0;
-  const totalCustomers = data?.reduce((sum, c) => sum + c.customer_count, 0) || 0;
   const totalOrders = data?.reduce((sum, c) => sum + c.total_orders, 0) || 0;
 
   // Add revenue share percentage to data
@@ -78,8 +76,7 @@ export function TopByCountryPage() {
     {
       key: 'country',
       header: 'Mamlakat',
-      render: (value: unknown, row: unknown) => {
-        const item = row as typeof enrichedData[0];
+      render: (value: unknown) => {
         return (
           <div className="flex items-center gap-2">
             <Globe size={16} className="text-primary-500" />
@@ -136,7 +133,7 @@ export function TopByCountryPage() {
           <div className="flex items-center justify-end gap-2">
             <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
+                className="h-full bg-linear-to-r from-primary-500 to-primary-400 rounded-full"
                 style={{ width: `${Math.min(percent, 100)}%` }}
               />
             </div>

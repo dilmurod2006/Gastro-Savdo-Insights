@@ -107,7 +107,6 @@ export function ABCAnalysisPage() {
         // Check start of string to avoid "Bottom" matching "B"
         const isA = category.startsWith('A');
         const isB = category.startsWith('B');
-        const isC = category.startsWith('C');
         
         const variant = isA ? 'success' : isB ? 'warning' : 'default';
         const label = isA ? 'A' : isB ? 'B' : 'C';

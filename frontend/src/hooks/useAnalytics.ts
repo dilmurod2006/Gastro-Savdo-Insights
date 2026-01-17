@@ -16,7 +16,6 @@ import {
   DayOfWeekPattern,
   DiscountImpact,
   TerritoryPerformance,
-  CategoryMonthlyGrowth,
   CategoryMonthlySales,
   CategoryCountryBreakdown,
   SupplierPerformance,

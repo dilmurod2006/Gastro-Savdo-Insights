@@ -3,7 +3,7 @@ import { Table } from '@/components/ui/Table';
 import { Card } from '@/components/ui/Card';
 import { DiscontinuedProduct } from '@/types/analytics.types';
 import { Badge } from '@/components/ui/Badge';
-import { ArrowLeft, Ban, Package, DollarSign, ShoppingCart, Percent, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Ban, Package, DollarSign, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function DiscontinuedPage() {
