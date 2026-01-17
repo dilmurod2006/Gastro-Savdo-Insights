@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { UserCheck, UserX, Calendar, TrendingUp, Clock, Users } from 'lucide-react';
 import { Card, Table, Badge, ErrorState } from '@/components/ui';
 import { PieChart, BarChart } from '@/components/charts';
@@ -11,6 +11,21 @@ import { CHART_COLORS } from '@/utils/constants';
 export function RetentionPage() {
   const { theme } = useTheme();
   const { data, loading, error, refetch } = useRetentionAnalysis();
+
+  // Get unique buyer types
+  const buyerTypes = useMemo(() => {
+    if (!data) return [];
+    const types = new Set(data.map((c: any) => c.original_buyer_type).filter(Boolean));
+    return Array.from(types).sort();
+  }, [data]);
+
+  const [selectedBuyerType, setSelectedBuyerType] = useState<string>('all');
+
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    if (selectedBuyerType === 'all') return data;
+    return data.filter((item: any) => item.original_buyer_type === selectedBuyerType);
+  }, [data, selectedBuyerType]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -375,15 +390,24 @@ export function RetentionPage() {
               Faollik davri va buyurtmalar tarixi
             </p>
           </div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+            <select
+              className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedBuyerType}
+              onChange={(e) => setSelectedBuyerType(e.target.value)}
+            >
+              <option value="all">Barcha Turlar</option>
+              {buyerTypes.map((type: unknown) => (
+                <option key={type as string} value={type as string}>{type as string}</option>
+              ))}
+            </select>
             <Badge variant="success">Frequent</Badge>
             <Badge variant="info">Regular</Badge>
-            <Badge variant="warning">Occasional</Badge>
           </div>
         </div>
         <Table
           columns={columns}
-          data={data || []}
+          data={filteredData || []}
           loading={loading}
         />
       </Card>

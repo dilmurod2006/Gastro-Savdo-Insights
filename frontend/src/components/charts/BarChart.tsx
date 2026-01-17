@@ -29,6 +29,7 @@ interface BarChartProps {
   showLegend?: boolean;
   formatAsAmount?: boolean;
   height?: number;
+  exact?: boolean;
   colorByValue?: boolean;
 }
 
@@ -47,6 +48,7 @@ export function BarChart({
   showLegend = false,
   formatAsAmount = true,
   height = 300,
+  exact = false,
   colorByValue = false,
 }: BarChartProps) {
   const { theme } = useTheme();
@@ -68,7 +70,15 @@ export function BarChart({
     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
   };
 
-  const formatValue = formatAsAmount ? formatCompactCurrency : formatCompactNumber;
+  const formatValue = (v: number | string) => {
+    if (typeof v === 'string') return v;
+    if (exact) {
+      return formatAsAmount 
+        ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v)
+        : new Intl.NumberFormat('en-US').format(v);
+    }
+    return formatAsAmount ? formatCompactCurrency(v) : formatCompactNumber(v);
+  };
 
   return (
     <ResponsiveContainer width="100%" height={height}>

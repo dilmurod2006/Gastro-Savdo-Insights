@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
-import { Card, Table, Badge, ErrorState } from '@/components/ui';
+import { useMemo, useState } from 'react';
+import { Card, Table, Badge, ErrorState, Button } from '@/components/ui';
 import { PieChart } from '@/components/charts';
 import { useTheme } from '@/contexts';
 import { useRFMSegmentation } from '@/hooks';
 import { cn } from '@/utils/helpers';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import { CHART_COLORS } from '@/utils/constants';
-import { Crown, Users, TrendingUp, UserPlus, AlertTriangle, UserX } from 'lucide-react';
+import { Crown, Users, TrendingUp, UserPlus, AlertTriangle, UserX, Download } from 'lucide-react';
 import type { RFMCustomer } from '@/types';
 
 // Segment configuration with icons
@@ -25,6 +25,20 @@ const SEGMENT_CONFIG: Record<string, { color: string; icon: React.ElementType; d
 export function RFMSegmentationPage() {
   const { theme } = useTheme();
   const { data, loading, error, refetch } = useRFMSegmentation();
+
+  // Get unique segments for filter
+  const segments = useMemo(() => {
+    if (!data) return [];
+    return Array.from(new Set(data.map(d => d.segment))).sort();
+  }, [data]);
+
+  const [selectedSegment, setSelectedSegment] = useState<string>('all');
+
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    if (selectedSegment === 'all') return data;
+    return data.filter(item => item.segment === selectedSegment);
+  }, [data, selectedSegment]);
 
   // Calculate segment statistics
   const segmentStats = useMemo(() => {
@@ -153,6 +167,7 @@ export function RFMSegmentationPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <h1 className={cn(
           'text-2xl font-bold',
@@ -166,6 +181,24 @@ export function RFMSegmentationPage() {
         )}>
           Mijozlarni Recency, Frequency, Monetary asosida segmentlash
         </p>
+      </div>
+      
+      <div className="flex items-center gap-2">
+           <select
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={selectedSegment}
+            onChange={(e) => setSelectedSegment(e.target.value)}
+          >
+            <option value="all">Barcha Segmentlar</option>
+            {segments.map(segment => (
+              <option key={segment} value={segment}>{segment}</option>
+            ))}
+          </select>
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+      </div>
       </div>
 
       {/* Summary Stats */}
@@ -366,7 +399,7 @@ export function RFMSegmentationPage() {
         </div>
         <Table
           columns={columns}
-          data={data || []}
+          data={filteredData || []}
           loading={loading}
         />
       </Card>

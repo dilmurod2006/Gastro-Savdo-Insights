@@ -215,18 +215,28 @@ export interface DiscountImpact {
 }
 
 export interface TerritoryPerformance {
-  territory_id: number;
-  region: string;
+  region_id: number;
+  region_name: string;
+  territory_id: string; // Backend returns this as string (territoryId from Territory table)
+  territory_name: string;
+  employee_id: number;
+  employee_name: string;
   total_orders: number;
+  unique_customers: number;
   total_revenue: number;
   avg_order_value: number;
-  percentage_of_total: number;
-  // Legacy
-  territory_description?: string;
-  region_id?: number;
-  region_description?: string;
-  unique_customers?: number;
-  rank_in_region?: number;
+  territory_rank_in_region: number;
+  // Computed on frontend
+  percentage_of_total?: number;
+}
+
+export interface RecentActivity {
+  order_id: number;
+  order_date: string;
+  customer_name: string;
+  employee_name: string;
+  total_amount: number;
+  status: string;
 }
 
 // ==================== CATEGORIES ====================

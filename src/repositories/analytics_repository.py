@@ -819,9 +819,41 @@ class SalesAnalyticsRepository(BaseAnalyticsRepository):
             INNER JOIN SalesOrder so ON e.employeeId = so.employeeId
             INNER JOIN OrderDetail od ON so.orderId = od.orderId
             GROUP BY r.regionId, r.regiondescription, t.territoryId, t.territorydescription, e.employeeId, e.firstname, e.lastname
-            ORDER BY r.regionId, total_revenue DESC
+            ORDER BY r.regiondescription, total_revenue DESC
         """
         return self.execute_query(query)
+
+    def get_recent_sales_activity(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get recent sales activity for dashboard
+        
+        Args:
+            limit: Number of recent orders to return
+            
+        Returns:
+            List of recent orders with details
+        """
+        query = """
+            SELECT 
+                so.orderId as order_id,
+                so.orderDate as order_date,
+                c.companyName as customer_name,
+                CONCAT(e.firstname, ' ', e.lastname) as employee_name,
+                SUM(od.unitPrice * od.quantity * (1 - od.discount)) as total_amount,
+                CASE 
+                    WHEN so.shippedDate IS NULL THEN 'Pending'
+                    WHEN so.shippedDate > so.requiredDate THEN 'Late'
+                    ELSE 'Completed'
+                END as status
+            FROM SalesOrder so
+            INNER JOIN Customer c ON so.custId = c.custId
+            INNER JOIN Employee e ON so.employeeId = e.employeeId
+            INNER JOIN OrderDetail od ON so.orderId = od.orderId
+            GROUP BY so.orderId, so.orderDate, c.companyName, e.firstname, e.lastname, so.shippedDate, so.requiredDate
+            ORDER BY so.orderDate DESC
+            LIMIT %s
+        """
+        return self.execute_query(query, (limit,))
     
     def get_business_kpi_dashboard(self) -> List[Dict[str, Any]]:
         """

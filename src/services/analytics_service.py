@@ -395,16 +395,16 @@ class SalesAnalyticsService(BaseAnalyticsService):
     
     def get_territory_performance(self) -> AnalyticsResponse:
         """
-        Get territory and region sales performance
-        
-        Returns:
-            Territory sales analysis response
-        """
-        logger.info("Analyzing territory sales performance")
-        data = self.repository.get_territory_sales_analysis()
+            "Territory sales analysis completed"
+        )
+    
+    def get_recent_activity(self, limit: int = 10) -> AnalyticsResponse:
+        """Get recent sales activity"""
+        logger.info(f"Getting recent sales activity (limit: {limit})")
+        data = self.repository.get_recent_sales_activity(limit)
         return self.format_response(
             data,
-            "Territory sales analysis completed"
+            "Recent sales activity retrieved"
         )
     
     def get_business_kpis(self) -> AnalyticsResponse:

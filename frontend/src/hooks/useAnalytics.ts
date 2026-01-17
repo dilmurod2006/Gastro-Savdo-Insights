@@ -20,7 +20,8 @@ import {
   CategoryCountryBreakdown,
   SupplierPerformance,
   SupplierRisk,
-  ShipperEfficiency
+  ShipperEfficiency,
+  RecentActivity
 } from '@/types/analytics.types';
 
 /**
@@ -140,6 +141,13 @@ export function useTerritoryPerformance() {
   return useApi<TerritoryPerformance[]>(
     () => analyticsService.getTerritoryPerformance(),
     []
+  );
+}
+
+export function useRecentActivity(limit: number = 10) {
+  return useApi<RecentActivity[]>(
+    () => analyticsService.getRecentActivity(limit),
+    [limit]
   );
 }
 

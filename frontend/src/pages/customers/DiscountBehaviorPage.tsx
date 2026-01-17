@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Percent, Users, DollarSign } from 'lucide-react';
 import { Card, Table, Badge, Select, ErrorState } from '@/components/ui';
 import { BarChart, PieChart } from '@/components/charts';
@@ -19,6 +19,21 @@ export function DiscountBehaviorPage() {
   const { theme } = useTheme();
   const [limit, setLimit] = useState(50);
   const { data, loading, error, refetch } = useDiscountBehavior(limit);
+  const [selectedSegment, setSelectedSegment] = useState<string>('all');
+
+  // Get unique segments for filter
+  const segments = useMemo(() => {
+    if (!data) return [];
+    // Extract unique segments, filter out empty/null values, and sort them
+    const uniqueSegments = new Set(data.map((c: any) => c.behavior_segment).filter(Boolean));
+    return Array.from(uniqueSegments).sort();
+  }, [data]);
+
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    if (selectedSegment === 'all') return data;
+    return data.filter((item: any) => item.behavior_segment === selectedSegment);
+  }, [data, selectedSegment]);
 
   // Segment distribution
   const segmentData = data
@@ -30,7 +45,9 @@ export function DiscountBehaviorPage() {
       ).map(([name, value], index) => ({
         name,
         value,
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        color: name === 'Full Price Buyer' ? '#10b981' : // Green
+               name === 'Discount Aware' ? '#3b82f6' :   // Blue
+               CHART_COLORS[index % CHART_COLORS.length],
       }))
     : [];
 
@@ -42,9 +59,19 @@ export function DiscountBehaviorPage() {
 
   // Summary
   const totalDiscount = data?.reduce((sum, c) => sum + c.total_discount_value, 0) || 0;
-  const avgDiscountPct = data
-    ? data.reduce((sum, c) => sum + c.discount_percentage, 0) / data.length
-    : 0;
+  
+  // Fix NaN issue: Ensure discount_percentage is treated as a number and filter out invalids
+  const avgDiscountPct = useMemo(() => {
+    if (!data || data.length === 0) return 0;
+    
+    const validPercentages = data
+      .map(c => Number(c.discount_percentage))
+      .filter(p => !isNaN(p));
+      
+    if (validPercentages.length === 0) return 0;
+    
+    return validPercentages.reduce((sum, p) => sum + p, 0) / validPercentages.length;
+  }, [data]);
 
   const columns = [
     {
@@ -105,9 +132,9 @@ export function DiscountBehaviorPage() {
         return (
           <Badge
             variant={
-              segment.toLowerCase().includes('high') ? 'warning' :
-              segment.toLowerCase().includes('low') ? 'success' :
-              'info'
+              segment === 'Full Price Buyer' || segment.includes('Low') ? 'success' :
+              segment === 'Discount Aware' || segment.includes('High') ? 'info' :
+              'warning'
             }
           >
             {segment}
@@ -237,7 +264,7 @@ export function DiscountBehaviorPage() {
       {/* Table */}
       <Card className="overflow-hidden">
         <div className={cn(
-          'px-6 py-4 border-b',
+          'px-6 py-4 border-b flex items-center justify-between',
           theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
         )}>
           <h3 className={cn(
@@ -246,10 +273,21 @@ export function DiscountBehaviorPage() {
           )}>
             Batafsil ma'lumotlar
           </h3>
+          <div className="flex items-center gap-2">
+            <Select
+              options={[
+                { value: 'all', label: 'Barcha Segmentlar' },
+                ...segments.map(seg => ({ value: seg as string, label: seg as string }))
+              ]}
+              value={selectedSegment}
+              onChange={(v) => setSelectedSegment(v)}
+              className="w-48"
+            />
+          </div>
         </div>
         <Table<DiscountBehaviorCustomer>
           columns={columns}
-          data={data || []}
+          data={filteredData || []}
           loading={loading}
         />
       </Card>

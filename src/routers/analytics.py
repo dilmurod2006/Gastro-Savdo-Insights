@@ -803,6 +803,38 @@ async def get_territory_performance(db: DatabaseManager = Depends(get_db)):
 
 
 @router.get(
+    "/dashboard/recent-activity",
+    response_model=AnalyticsResponse,
+    summary="Recent Sales Activity",
+    description="""
+    Returns the most recent sales orders.
+    
+    **Metrics included:**
+    - Order ID and Date
+    - Customer Name
+    - Employee Name
+    - Total Amount
+    - Status
+    """,
+    response_description="List of recent sales orders"
+)
+async def get_recent_activity(
+    limit: int = Query(default=10, ge=1, le=50),
+    db: DatabaseManager = Depends(get_db)
+):
+    """Get recent sales activity"""
+    try:
+        service = AnalyticsServiceFactory.create_sales_service(db)
+        return service.get_recent_activity(limit)
+    except DatabaseException as e:
+        logger.error(f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get(
     "/dashboard/business-kpis",
     response_model=AnalyticsResponse,
     summary="Business KPI Dashboard",

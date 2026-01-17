@@ -110,24 +110,18 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <Card title="Revenue Trend" description="Monthly revenue performance">
-          <div className="h-[300px] w-full">
+          <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} />
+                <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
               </LineChart>
             </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card title="Recent Activity" description="Latest transactions and events">
-          <div className="h-[300px] flex items-center justify-center text-gray-500">
-             <p>Activity Feed Component Coming Soon</p>
           </div>
         </Card>
       </div>
