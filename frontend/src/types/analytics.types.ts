@@ -241,23 +241,35 @@ export interface RecentActivity {
 
 // ==================== CATEGORIES ====================
 export interface CategoryMonthlyGrowth {
+  category_id: number;
   category_name: string;
-  month: number; 
   year: number;
+  month: number;
   monthly_revenue: number;
-  previous_month_revenue: number;
-  growth_rate: number;
-  running_total: number;
-  // Legacy
+  previous_month_revenue?: number;
+  growth_rate?: number;
+  running_total?: number;
+  // Legacy support for other pages
   revenue?: number;
   prev_month_revenue?: number;
   mom_growth_pct?: number;
 }
 
-export interface CategoryCountryBreakdown {
-  country: string;
+export interface CategoryMonthlySales {
+  category_id: number;
   category_name: string;
-  total_revenue: number;
+  total_sales: number;
+  growth_percentage: number;
+  monthly_data: {
+    year: number;
+    month: number;
+    total_sales: number;
+    order_count: number;
+    growth_percent?: number;
+  }[];
+}
+
+export interface CategoryCountryBreakdown {
   order_count: number;
   category_percentage: number;
   country_percentage: number;

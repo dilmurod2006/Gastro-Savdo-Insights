@@ -356,7 +356,7 @@ export function RetentionPage() {
         </div>
         <div className="w-full h-4 bg-slate-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-1000"
+            className="h-full bg-linear-to-r from-green-500 to-green-400 rounded-full transition-all duration-1000"
             style={{ width: `${stats.retentionRate}%` }}
           />
         </div>

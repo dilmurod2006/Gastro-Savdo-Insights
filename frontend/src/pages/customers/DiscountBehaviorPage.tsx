@@ -280,7 +280,7 @@ export function DiscountBehaviorPage() {
                 ...segments.map(seg => ({ value: seg as string, label: seg as string }))
               ]}
               value={selectedSegment}
-              onChange={(v) => setSelectedSegment(v)}
+              onChange={(v) => setSelectedSegment(String(v))}
               className="w-48"
             />
           </div>

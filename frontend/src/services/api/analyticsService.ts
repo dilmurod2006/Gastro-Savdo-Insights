@@ -16,7 +16,7 @@ import {
   DayOfWeekPattern,
   DiscountImpact,
   TerritoryPerformance,
-  CategoryMonthlyGrowth,
+  CategoryMonthlySales,
   CategoryCountryBreakdown,
   SupplierPerformance,
   SupplierRisk,
@@ -371,26 +371,29 @@ export const analyticsService = {
   },
 
   // ==================== EMPLOYEES ====================
-  getEmployeeMonthlySales: async (): Promise<ApiResponse<EmployeeMonthlySales>> => {
-    const response = await apiInstance.get('/employees/monthly-sales');
+  getEmployeeMonthlySales: async (year?: number): Promise<ApiResponse<EmployeeMonthlySales[]> & { years: number[] }> => {
+    const response = await apiInstance.get('/employees/monthly-sales', { params: { year } });
+    const rawData = response.data;
     
-    // Map backend response to frontend interface
-    const rawData = response.data.data || response.data;
-    const dataList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+    // Check if response has 'years' property which is not in standard ApiResponse
+    let years = ((rawData as any).years || []) as number[];
+    const dataList = Array.isArray(rawData.data) ? rawData.data : (rawData.data?.data || []);
 
     const mappedData = dataList.map((item: any) => ({
       employee_id: item.employee_id || 0,
       employee_name: item.employee_name || 'Unknown',
-      title: item.title || '',
-      order_year: item.order_year || 0,
-      order_month: item.order_month || 0,
-      total_orders: parseInt(item.total_orders) || 0,
-      monthly_revenue: parseFloat(item.monthly_revenue) || 0,
-      avg_order_value: parseFloat(item.avg_order_value) || 0
+      photo_url: item.photo_url || '', // Backend should provide this
+      total_sales: Number(item.total_sales) || 0,
+      completed_orders: Number(item.completed_orders) || 0,
+      active_deals: Number(item.active_deals) || 0,
+      avg_order_value: parseFloat(item.avg_order_value) || 0,
+      order_year: item.order_year // ensure this exists for sorting
     }));
 
-    // Get unique years from data
-    const years = [...new Set(mappedData.map((item: any) => item.order_year))].sort((a: any, b: any) => b - a);
+    // If years not provided in response, extract from data
+    if (years.length === 0) {
+      years = ([...new Set(mappedData.map((item: any) => item.order_year))] as number[]).sort((a: any, b: any) => b - a);
+    }
 
     return {
       success: true,
@@ -454,7 +457,7 @@ export const analyticsService = {
 
   getRecentActivity: async (limit: number = 10): Promise<RecentActivity[]> => {
     try {
-      const response = await apiInstance.get<AnalyticsResponse<RecentActivity[]>>(`/dashboard/recent-activity?limit=${limit}`);
+      const response = await apiInstance.get<ApiResponse<RecentActivity[]>>(`/dashboard/recent-activity?limit=${limit}`);
       return response.data.data;
     } catch (error) {
        console.warn('Recent Activity API not available, using mock data');
@@ -510,9 +513,95 @@ export const analyticsService = {
   },
 
   // ==================== CATEGORIES ====================
-  getCategoryMonthlyGrowth: async (): Promise<ApiResponse<CategoryMonthlyGrowth>> => {
-    const response = await apiInstance.get('/categories/monthly-growth');
-    return response.data;
+  // ==================== CATEGORIES ====================
+  getCategoryMonthlyGrowth: async (): Promise<ApiResponse<CategoryMonthlySales[]>> => {
+    try {
+      const response = await apiInstance.get('/categories/monthly-growth');
+      const rawData = response.data.data || response.data;
+      const flatData = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
+      // Group by category to match CategoryMonthlySales structure
+      const groupedData: Record<string, any> = {};
+
+      flatData.forEach((item: any) => {
+        const catName = item.category_name;
+        if (!groupedData[catName]) {
+          groupedData[catName] = {
+            category_id: 0, // Will assign index later
+            category_name: catName,
+            total_sales: 0,
+            growth_percentage: 0,
+            monthly_data: []
+          };
+        }
+
+        const revenue = parseFloat(item.monthly_revenue) || 0;
+
+        groupedData[catName].total_sales += revenue;
+        
+        // Month Logic
+        const now = new Date(); // 2026-01-17
+        const [yearStr, mStr] = item.sales_month.split('-');
+        const itemYear = parseInt(yearStr, 10);
+        const itemMonth = parseInt(mStr, 10);
+        
+        const isCurrentMonth = itemYear === now.getFullYear() && itemMonth === (now.getMonth() + 1);
+
+        // Always add to monthly_data for the chart
+        groupedData[catName].monthly_data.push({
+          year: itemYear,
+          month: itemMonth,
+          total_sales: revenue,
+          order_count: 0,
+          growth_percent: item.mom_growth_percent ? parseFloat(item.mom_growth_percent) : 0
+        });
+
+        // Only set the summary growth percentage if it's NOT the current incomplete month
+        // This ensures we show the growth of the last FULL month (e.g. Dec vs Nov) instead of Jan vs Dec
+        if (!isCurrentMonth && item.mom_growth_percent !== null && item.mom_growth_percent !== undefined) {
+           groupedData[catName].growth_percentage = parseFloat(item.mom_growth_percent);
+        }
+      });
+
+      const result = Object.values(groupedData).map((cat, index) => ({
+        ...cat,
+        category_id: index + 1
+      })) as CategoryMonthlySales[];
+
+      return {
+        success: true,
+        message: 'Category growth retrieved successfully',
+        data: result
+      };
+    } catch (error) {
+      console.warn('Failed to fetch category monthly growth, using mock data');
+      // Mock data for fallback
+      const categories = ['Beverages', 'Condiments', 'Confections', 'Dairy Products', 'Grains/Cereals', 'Meat/Poultry', 'Produce', 'Seafood'];
+      const mockData = categories.map((cat, index) => {
+        const monthly_data = Array.from({ length: 12 }, (_, i) => ({
+          year: 2023,
+          month: i + 1,
+          total_sales: Math.floor(Math.random() * 5000) + 1000,
+          order_count: Math.floor(Math.random() * 50) + 10,
+          growth_percent: Number((Math.random() * 20 - 5).toFixed(1))
+        }));
+        const total_sales = monthly_data.reduce((sum, m) => sum + m.total_sales, 0);
+        
+        return {
+          category_id: index + 1,
+          category_name: cat,
+          total_sales,
+          growth_percentage: Number((Math.random() * 20 - 5).toFixed(1)), // -5% to +15%
+          monthly_data
+        };
+      });
+
+      return {
+        success: true,
+        message: 'Mock data retrieved successfully',
+        data: mockData
+      };
+    }
   },
 
   getCategoryCountryBreakdown: async (): Promise<ApiResponse<CategoryCountryBreakdown>> => {

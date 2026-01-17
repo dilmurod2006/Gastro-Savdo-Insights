@@ -17,6 +17,7 @@ import {
   DiscountImpact,
   TerritoryPerformance,
   CategoryMonthlyGrowth,
+  CategoryMonthlySales,
   CategoryCountryBreakdown,
   SupplierPerformance,
   SupplierRisk,
@@ -155,7 +156,7 @@ export function useRecentActivity(limit: number = 10) {
  * Categories Hooks
  */
 export function useMonthlyGrowth() {
-  return useApi<CategoryMonthlyGrowth[]>(
+  return useApi<CategoryMonthlySales[]>(
     () => analyticsService.getCategoryMonthlyGrowth(),
     []
   );
