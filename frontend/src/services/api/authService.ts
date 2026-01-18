@@ -1,4 +1,5 @@
-import apiClient, { TokenStorage } from './apiClient';
+import apiClient from './apiClient';
+import { TokenStorage } from '../auth/tokenStorage';
 import { API_CONFIG } from '@/config';
 import type {
   LoginRequest,

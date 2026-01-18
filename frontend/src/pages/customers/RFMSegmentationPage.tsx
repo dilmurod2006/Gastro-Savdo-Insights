@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Card, Table, Badge, ErrorState, Button } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
 import { PieChart } from '@/components/charts';
-import { useTheme } from '@/contexts';
 import { useRFMSegmentation } from '@/hooks';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/utils/helpers';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import { CHART_COLORS } from '@/utils/constants';
-import { Crown, Users, TrendingUp, UserPlus, AlertTriangle, UserX, Download } from 'lucide-react';
+import { Crown, Users, TrendingUp, UserPlus, AlertTriangle, UserX, Download, ArrowLeft, Filter, X } from 'lucide-react';
 import type { RFMCustomer } from '@/types';
 
 // Segment configuration with icons
@@ -23,14 +23,8 @@ const SEGMENT_CONFIG: Record<string, { color: string; icon: React.ElementType; d
 };
 
 export function RFMSegmentationPage() {
-  const { theme } = useTheme();
+  const navigate = useNavigate();
   const { data, loading, error, refetch } = useRFMSegmentation();
-
-  // Get unique segments for filter
-  const segments = useMemo(() => {
-    if (!data) return [];
-    return Array.from(new Set(data.map(d => d.segment))).sort();
-  }, [data]);
 
   const [selectedSegment, setSelectedSegment] = useState<string>('all');
 
@@ -81,224 +75,271 @@ export function RFMSegmentationPage() {
     ? data.reduce((sum, c) => sum + c.r_score + c.f_score + c.m_score, 0) / (data.length * 3)
     : 0;
 
-  const columns = [
-    {
-      key: 'company_name',
-      header: 'Kompaniya',
-      render: (value: unknown) => (
-        <span className="font-medium text-white">{value as string}</span>
-      ),
-    },
-    {
-      key: 'recency_days',
-      header: 'Recency (kun)',
-      align: 'center' as const,
-      render: (value: unknown) => {
-        const days = Number(value) || 0;
-        let colorClass = 'text-green-400';
-        if (days > 60) colorClass = 'text-red-400';
-        else if (days > 30) colorClass = 'text-yellow-400';
-        return <span className={cn('font-medium', colorClass)}>{days}</span>;
-      },
-    },
-    {
-      key: 'frequency',
-      header: 'Frequency',
-      align: 'center' as const,
-      render: (value: unknown) => (
-        <span className="font-medium">{formatNumber(value as number)}</span>
-      ),
-    },
-    {
-      key: 'monetary',
-      header: 'Monetary',
-      align: 'right' as const,
-      render: (value: unknown) => (
-        <span className="font-semibold text-green-500">{formatCurrency(value as number)}</span>
-      ),
-    },
-    {
-      key: 'rfm_score',
-      header: 'RFM Score',
-      align: 'center' as const,
-      render: (_value: unknown, row: unknown) => {
-        const customer = row as RFMCustomer;
-        return (
-          <div className="flex items-center justify-center gap-1">
-            <span className="w-6 h-6 rounded bg-green-500/20 text-green-400 text-xs flex items-center justify-center font-bold">
-              {customer.r_score}
-            </span>
-            <span className="w-6 h-6 rounded bg-blue-500/20 text-blue-400 text-xs flex items-center justify-center font-bold">
-              {customer.f_score}
-            </span>
-            <span className="w-6 h-6 rounded bg-purple-500/20 text-purple-400 text-xs flex items-center justify-center font-bold">
-              {customer.m_score}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'segment',
-      header: 'Segment',
-      align: 'center' as const,
-      render: (value: unknown) => {
-        const segment = value as string;
-        return (
-          <Badge
-            variant={
-              segment === 'Champions' ? 'success' :
-              segment === 'Lost' || segment === 'Hibernating' ? 'danger' :
-              segment === 'At Risk' || segment === 'Need Attention' ? 'warning' :
-              'info'
-            }
-          >
-            {segment}
-          </Badge>
-        );
-      },
-    },
-  ];
+  // Get recency color
+  const getRecencyColor = (days: number) => {
+    if (days > 60) return 'text-red-400';
+    if (days > 30) return 'text-yellow-400';
+    return 'text-emerald-400';
+  };
+
+  // Get segment badge
+  const getSegmentBadge = (segment: string) => {
+    const config = SEGMENT_CONFIG[segment];
+    if (!config) {
+      return (
+        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-500/15 text-gray-400 border border-gray-500/30">
+          {segment}
+        </span>
+      );
+    }
+
+    return (
+      <span 
+        className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium border"
+        style={{ 
+          backgroundColor: `${config.color}15`,
+          color: config.color,
+          borderColor: `${config.color}30`
+        }}
+      >
+        {segment}
+      </span>
+    );
+  };
 
   if (error) {
-    return <ErrorState onRetry={refetch} />;
+    return (
+      <div className="p-12 text-center">
+        <div className="text-red-500 font-medium mb-4">Ma'lumotlarni yuklashda xatolik</div>
+        <button 
+          onClick={refetch}
+          className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+        >
+          Qayta urinish
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 className={cn(
-          'text-2xl font-bold',
-          theme === 'dark' ? 'text-white' : 'text-gray-900'
-        )}>
-          RFM Segmentatsiya
-        </h1>
-        <p className={cn(
-          'text-sm mt-1',
-          theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
-        )}>
-          Mijozlarni Recency, Frequency, Monetary asosida segmentlash
-        </p>
-      </div>
-      
-      <div className="flex items-center gap-2">
-           <select
-            className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={selectedSegment}
-            onChange={(e) => setSelectedSegment(e.target.value)}
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200"
           >
-            <option value="all">Barcha Segmentlar</option>
-            {segments.map(segment => (
-              <option key={segment} value={segment}>{segment}</option>
-            ))}
-          </select>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-      </div>
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+              RFM Segmentatsiya
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
+              Mijozlarni Recency, Frequency, Monetary asosida segmentlash
+            </p>
+          </div>
+        </div>
+      
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Download className="h-4 w-4" />
+          Export
+        </Button>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-5">
+        <Card className="p-5 border border-gray-200 dark:border-gray-700/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className={cn('text-sm', theme === 'dark' ? 'text-slate-400' : 'text-gray-500')}>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Jami mijozlar
               </p>
-              <p className={cn('text-2xl font-bold mt-1', theme === 'dark' ? 'text-white' : 'text-gray-900')}>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                 {formatNumber(totalCustomers)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-primary-500/20 flex items-center justify-center">
-              <Users className="text-primary-500" size={24} />
+            <div className="p-3 rounded-xl bg-primary-500/20">
+              <Users className="w-6 h-6 text-primary-500" />
             </div>
           </div>
         </Card>
-        <Card className="p-5">
+        <Card className="p-5 border border-gray-200 dark:border-gray-700/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className={cn('text-sm', theme === 'dark' ? 'text-slate-400' : 'text-gray-500')}>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Jami daromad
               </p>
-              <p className="text-2xl font-bold mt-1 text-green-500">
+              <p className="text-2xl font-bold text-emerald-500 mt-1">
                 {formatCurrency(totalRevenue)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-              <TrendingUp className="text-green-500" size={24} />
+            <div className="p-3 rounded-xl bg-emerald-500/20">
+              <TrendingUp className="w-6 h-6 text-emerald-500" />
             </div>
           </div>
         </Card>
-        <Card className="p-5">
+        <Card className="p-5 border border-gray-200 dark:border-gray-700/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className={cn('text-sm', theme === 'dark' ? 'text-slate-400' : 'text-gray-500')}>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 O'rtacha RFM ball
               </p>
-              <p className={cn('text-2xl font-bold mt-1', theme === 'dark' ? 'text-white' : 'text-gray-900')}>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                 {avgRFM.toFixed(1)} / 5
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
-              <Crown className="text-purple-500" size={24} />
+            <div className="p-3 rounded-xl bg-purple-500/20">
+              <Crown className="w-6 h-6 text-purple-500" />
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Segment Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {segmentStats.slice(0, 5).map((seg) => {
-          const Icon = seg.icon;
-          return (
-            <Card key={seg.name} className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${seg.color}20` }}
-                >
-                  <Icon size={20} style={{ color: seg.color }} />
-                </div>
-                <span 
-                  className="text-2xl font-bold"
-                  style={{ color: seg.color }}
-                >
-                  {seg.count}
-                </span>
+      {/* Segment Filter Cards */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Segment bo'yicha filtr
+            </span>
+          </div>
+          {selectedSegment !== 'all' && (
+            <button
+              onClick={() => setSelectedSegment('all')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+            >
+              <X className="w-3 h-3" />
+              Filtrni tozalash
+            </button>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3">
+          {/* All Segments Card */}
+          <button
+            onClick={() => setSelectedSegment('all')}
+            className={cn(
+              "p-4 rounded-xl border-2 transition-all duration-200 text-left",
+              selectedSegment === 'all'
+                ? "border-primary-500 bg-primary-500/10 shadow-lg shadow-primary-500/20"
+                : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800/50"
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                selectedSegment === 'all' ? "bg-primary-500/20" : "bg-gray-100 dark:bg-gray-700"
+              )}>
+                <Users className={cn(
+                  "w-4 h-4",
+                  selectedSegment === 'all' ? "text-primary-500" : "text-gray-500"
+                )} />
               </div>
-              <p className={cn(
-                'text-sm font-medium truncate',
-                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              <span className={cn(
+                "text-lg font-bold",
+                selectedSegment === 'all' ? "text-primary-500" : "text-gray-900 dark:text-white"
               )}>
-                {seg.name}
-              </p>
-              <p className={cn(
-                'text-xs mt-0.5',
-                theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
-              )}>
-                {formatCurrency(seg.revenue)}
-              </p>
-            </Card>
-          );
-        })}
+                {totalCustomers}
+              </span>
+            </div>
+            <p className={cn(
+              "text-xs font-medium truncate",
+              selectedSegment === 'all' ? "text-primary-600 dark:text-primary-400" : "text-gray-600 dark:text-gray-400"
+            )}>
+              Barchasi
+            </p>
+          </button>
+
+          {/* Segment Cards */}
+          {segmentStats.map((seg) => {
+            const Icon = seg.icon;
+            const isSelected = selectedSegment === seg.name;
+            
+            return (
+              <button
+                key={seg.name}
+                onClick={() => setSelectedSegment(isSelected ? 'all' : seg.name)}
+                className={cn(
+                  "p-4 rounded-xl border-2 transition-all duration-200 text-left",
+                  isSelected
+                    ? "shadow-lg"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800/50"
+                )}
+                style={{
+                  borderColor: isSelected ? seg.color : undefined,
+                  backgroundColor: isSelected ? `${seg.color}10` : undefined,
+                  boxShadow: isSelected ? `0 10px 25px -5px ${seg.color}30` : undefined,
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div 
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${seg.color}20` }}
+                  >
+                    <Icon className="w-4 h-4" style={{ color: seg.color }} />
+                  </div>
+                  <span 
+                    className="text-lg font-bold"
+                    style={{ color: isSelected ? seg.color : undefined }}
+                  >
+                    {seg.count}
+                  </span>
+                </div>
+                <p 
+                  className="text-xs font-medium truncate"
+                  style={{ color: isSelected ? seg.color : undefined }}
+                  title={seg.name}
+                >
+                  {seg.name}
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Active Filter Badge */}
+      {selectedSegment !== 'all' && (
+        <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Faol filtr:</span>
+          <span 
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border"
+            style={{ 
+              backgroundColor: `${SEGMENT_CONFIG[selectedSegment]?.color || '#6B7280'}15`,
+              color: SEGMENT_CONFIG[selectedSegment]?.color || '#6B7280',
+              borderColor: `${SEGMENT_CONFIG[selectedSegment]?.color || '#6B7280'}30`
+            }}
+          >
+            {(() => {
+              const Icon = SEGMENT_CONFIG[selectedSegment]?.icon || Users;
+              return <Icon className="w-3.5 h-3.5" />;
+            })()}
+            {selectedSegment}
+            <button 
+              onClick={() => setSelectedSegment('all')}
+              className="ml-1 hover:opacity-70 transition-opacity"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            — {filteredData.length} ta mijoz
+          </span>
+        </div>
+      )}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart */}
-        <Card className="p-6">
-          <h3 className={cn(
-            'text-lg font-semibold mb-4',
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
-          )}>
+        <Card className="p-6 border border-gray-200 dark:border-gray-700/50">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Segment taqsimoti
           </h3>
           {loading ? (
-            <div className="h-75 skeleton rounded-lg" />
+            <div className="h-[300px] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
           ) : pieChartData.length > 0 ? (
             <PieChart
               data={pieChartData}
@@ -307,45 +348,50 @@ export function RFMSegmentationPage() {
               showLabels
             />
           ) : (
-            <div className="h-75 flex items-center justify-center text-slate-400">
+            <div className="h-[300px] flex items-center justify-center text-gray-400">
               Ma'lumot topilmadi
             </div>
           )}
         </Card>
 
         {/* Segment Details */}
-        <Card className="p-6">
-          <h3 className={cn(
-            'text-lg font-semibold mb-4',
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
-          )}>
+        <Card className="p-6 border border-gray-200 dark:border-gray-700/50">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Segment tafsilotlari
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
             {segmentStats.map((seg) => {
               const percentage = totalCustomers > 0 ? (seg.count / totalCustomers) * 100 : 0;
+              const isSelected = selectedSegment === seg.name;
+              
               return (
-                <div key={seg.name} className="flex items-center gap-3">
+                <button
+                  key={seg.name}
+                  onClick={() => setSelectedSegment(isSelected ? 'all' : seg.name)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded-lg transition-all duration-200",
+                    isSelected 
+                      ? "bg-gray-100 dark:bg-gray-700/50" 
+                      : "hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                  )}
+                >
                   <div
                     className="w-3 h-3 rounded-full flex-shrink-0"
                     style={{ backgroundColor: seg.color }}
                   />
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center justify-between mb-1">
                       <span className={cn(
-                        'text-sm font-medium truncate',
-                        theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        "text-sm font-medium truncate",
+                        isSelected ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
                       )}>
                         {seg.name}
                       </span>
-                      <span className={cn(
-                        'text-sm font-semibold ml-2',
-                        theme === 'dark' ? 'text-slate-300' : 'text-gray-700'
-                      )}>
+                      <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 ml-2">
                         {seg.count} ({percentage.toFixed(1)}%)
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{ 
@@ -355,7 +401,7 @@ export function RFMSegmentationPage() {
                       />
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -363,45 +409,173 @@ export function RFMSegmentationPage() {
       </div>
 
       {/* Table */}
-      <Card className="overflow-hidden">
-        <div className={cn(
-          'px-6 py-4 border-b flex items-center justify-between',
-          theme === 'dark' ? 'border-slate-700' : 'border-gray-200'
-        )}>
+      <Card className="overflow-hidden border border-gray-200 dark:border-gray-700/50 shadow-sm p-0">
+        {/* Table Header */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className={cn(
-              'text-lg font-semibold',
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            )}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Mijozlar ro'yxati
             </h3>
-            <p className={cn(
-              'text-sm mt-0.5',
-              theme === 'dark' ? 'text-slate-400' : 'text-gray-500'
-            )}>
-              RFM ballari va segmentlar bilan
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedSegment === 'all' 
+                ? 'Barcha segmentlar bo\'yicha' 
+                : `${selectedSegment} segmenti`} — {filteredData.length} ta mijoz
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-1">
-              <span className="w-4 h-4 rounded bg-green-500/20 text-green-400 flex items-center justify-center font-bold">R</span>
-              <span className="text-slate-400">Recency</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">R</span>
+              <span className="text-gray-500 dark:text-gray-400">Recency</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-4 h-4 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">F</span>
-              <span className="text-slate-400">Frequency</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[10px]">F</span>
+              <span className="text-gray-500 dark:text-gray-400">Frequency</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-4 h-4 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">M</span>
-              <span className="text-slate-400">Monetary</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-[10px]">M</span>
+              <span className="text-gray-500 dark:text-gray-400">Monetary</span>
             </div>
           </div>
         </div>
-        <Table
-          columns={columns}
-          data={filteredData || []}
-          loading={loading}
-        />
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse" style={{ minWidth: '900px' }}>
+            <colgroup>
+              <col style={{ width: '220px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '150px' }} />
+              <col style={{ width: '140px' }} />
+              <col style={{ width: '150px' }} />
+            </colgroup>
+            
+            {/* Table Header */}
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700/50">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Kompaniya
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Recency (kun)
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Frequency
+                </th>
+                <th className="px-4 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Monetary
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  RFM Ball
+                </th>
+                <th className="px-4 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Segment
+                </th>
+              </tr>
+            </thead>
+
+            {/* Table Body */}
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-4">
+                      <div className="w-36 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center">
+                        <div className="w-10 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center">
+                        <div className="w-10 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end">
+                        <div className="w-24 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center gap-1">
+                        <div className="w-7 h-7 bg-gray-200 dark:bg-gray-700 rounded" />
+                        <div className="w-7 h-7 bg-gray-200 dark:bg-gray-700 rounded" />
+                        <div className="w-7 h-7 bg-gray-200 dark:bg-gray-700 rounded" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center">
+                        <div className="w-24 h-7 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-16 text-center text-gray-500 dark:text-gray-400">
+                    Mijozlar topilmadi
+                  </td>
+                </tr>
+              ) : (
+                filteredData.map((customer, index) => (
+                  <tr 
+                    key={index} 
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150"
+                  >
+                    <td className="px-4 py-4">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {customer.company_name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className={cn('font-medium font-mono', getRecencyColor(customer.recency_days || 0))}>
+                        {customer.recency_days || 0}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className="font-medium text-gray-700 dark:text-gray-300 font-mono">
+                        {formatNumber(customer.frequency)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <span className="font-bold text-emerald-500 font-mono">
+                        {formatCurrency(customer.monetary)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="w-7 h-7 rounded bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">
+                          {customer.r_score}
+                        </span>
+                        <span className="w-7 h-7 rounded bg-blue-500/20 text-blue-400 text-xs flex items-center justify-center font-bold">
+                          {customer.f_score}
+                        </span>
+                        <span className="w-7 h-7 rounded bg-purple-500/20 text-purple-400 text-xs flex items-center justify-center font-bold">
+                          {customer.m_score}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center">
+                        {getSegmentBadge(customer.segment)}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer */}
+        {!loading && filteredData.length > 0 && (
+          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-200 dark:border-gray-700/50">
+            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+              <span>{filteredData.length} ta mijoz ko'rsatilmoqda</span>
+              <span className="font-mono text-xs">GET /api/v1/analytics/customers/rfm-segmentation</span>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

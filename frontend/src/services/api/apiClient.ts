@@ -1,31 +1,9 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { TokenResponse } from '@/types';
 
+import { TokenStorage } from '@/services/auth/tokenStorage';
+
 const BASE_URL = 'https://api.gastro-analytics.uz/api/v1';
-
-// Token storage keys
-const ACCESS_TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
-
-// Token management utilities
-export const TokenStorage = {
-  getAccessToken: (): string | null => localStorage.getItem(ACCESS_TOKEN_KEY),
-  getRefreshToken: (): string | null => localStorage.getItem(REFRESH_TOKEN_KEY),
-  
-  setTokens: (accessToken: string, refreshToken: string): void => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  },
-  
-  clearTokens: (): void => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-  },
-  
-  hasTokens: (): boolean => {
-    return !!localStorage.getItem(ACCESS_TOKEN_KEY);
-  },
-};
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -65,19 +43,20 @@ apiClient.interceptors.response.use(
            throw new Error('No refresh token available');
         }
 
-        // Note: The OpenAPI spec says refresh uses cookie, but some implementations might expects body.
-        // Based on "Cookie'dagi refresh token yordamida", it implies we send a request and the cookie is sent automatically.
-        // However, we stored tokens in localStorage too. Let's assume standard behavior first or follow spec strictly.
         // Spec: POST /auth/refresh
-        
         const response = await axios.post<TokenResponse>(
           `${BASE_URL}/auth/refresh`,
           {},
-          { withCredentials: true } 
+          { 
+            withCredentials: true,
+            headers: {
+                Authorization: `Bearer ${refreshToken}`
+            }
+          } 
         );
         
         const { access_token, refresh_token } = response.data;
-        // If new refresh token is returned, update it. If not, keep old one? Spec says it returns TokenResponse which has both.
+        // Update tokens - refresh_token might be optional if simple access token renewal
         TokenStorage.setTokens(access_token, refresh_token);
         
         if (originalRequest.headers) {
