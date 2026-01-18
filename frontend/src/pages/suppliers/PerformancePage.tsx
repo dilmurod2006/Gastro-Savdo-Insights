@@ -9,18 +9,9 @@ import { formatCurrency, formatNumber, formatPercent } from '@/utils/formatters'
 import { CHART_COLORS } from '@/utils/constants';
 import type { SupplierPerformance as SupplierPerformanceType } from '@/types';
 
-const YEAR_OPTIONS = [
-  { value: '', label: 'Barcha yillar' },
-  { value: 2024, label: '2024' },
-  { value: 2023, label: '2023' },
-  { value: 2022, label: '2022' },
-];
 
 export function PerformancePage() {
   const { theme } = useTheme();
-  // Year filtering is not yet supported by the backend endpoint (it aggregates all time)
-  // so we keep the state for UI but don't pass it as minOrders
-  const [year, setYear] = useState<number | ''>(''); 
   const { data, loading, error, refetch } = useSupplierPerformance(10); // default minOrders=10
 
   // Chart data
@@ -130,12 +121,6 @@ export function PerformancePage() {
             Ta'minotchilar bo'yicha savdo tahlili
           </p>
         </div>
-        <Select
-          options={YEAR_OPTIONS}
-          value={year}
-          onChange={(v) => setYear(v === '' ? '' : Number(v))}
-          className="w-36"
-        />
       </div>
 
       {/* Summary Cards */}

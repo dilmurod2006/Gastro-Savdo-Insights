@@ -382,12 +382,12 @@ export const analyticsService = {
     const mappedData = dataList.map((item: any) => ({
       employee_id: item.employee_id || 0,
       employee_name: item.employee_name || 'Unknown',
-      photo_url: item.photo_url || '', // Backend should provide this
-      total_sales: Number(item.total_sales) || 0,
-      completed_orders: Number(item.completed_orders) || 0,
-      active_deals: Number(item.active_deals) || 0,
+      title: item.title || '',
+      order_year: item.order_year || 0,
+      order_month: item.order_month || 0,
+      total_orders: Number(item.total_orders) || 0,
+      monthly_revenue: parseFloat(item.monthly_revenue) || 0,
       avg_order_value: parseFloat(item.avg_order_value) || 0,
-      order_year: item.order_year // ensure this exists for sorting
     }));
 
     // If years not provided in response, extract from data

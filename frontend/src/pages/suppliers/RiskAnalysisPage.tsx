@@ -169,12 +169,6 @@ export function RiskAnalysisPage() {
             Ta'minotchilar bog'liqlik va risk tahlili
           </p>
         </div>
-        <Select
-          options={RISK_THRESHOLD_OPTIONS}
-          value={threshold}
-          onChange={(v) => setThreshold(Number(v))}
-          className="w-48"
-        />
       </div>
 
       {/* Summary Cards */}
