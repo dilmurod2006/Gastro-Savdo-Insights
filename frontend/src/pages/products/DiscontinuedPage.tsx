@@ -1,7 +1,7 @@
 import { useDiscontinuedAnalysis } from '@/hooks';
 import { Card } from '@/components/ui/Card';
 import { DiscontinuedProduct } from '@/types/analytics.types';
-import { Badge } from '@/components/ui/Badge';
+
 import { ArrowLeft, Ban, Package, DollarSign, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

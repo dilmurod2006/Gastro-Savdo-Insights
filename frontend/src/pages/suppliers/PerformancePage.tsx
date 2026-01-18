@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { Building, DollarSign, Package, TrendingUp } from 'lucide-react';
-import { Card, Table, Select, ErrorState } from '@/components/ui';
+import { Card, Table, ErrorState } from '@/components/ui';
 import { BarChart, PieChart } from '@/components/charts';
 import { useTheme } from '@/contexts';
 import { useSupplierPerformance } from '@/hooks';

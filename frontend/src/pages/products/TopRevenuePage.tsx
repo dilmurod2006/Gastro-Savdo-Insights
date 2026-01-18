@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTopRevenueProducts } from '@/hooks';
 import { Card } from '@/components/ui/Card';
-import { TopRevenueProduct } from '@/types/analytics.types';
+
 import { ArrowLeft, TrendingUp, Package, ShoppingCart, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

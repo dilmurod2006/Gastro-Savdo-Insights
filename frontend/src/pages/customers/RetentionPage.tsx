@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { UserCheck, UserX, Calendar, TrendingUp, Clock, Users, ArrowLeft, Filter, X } from 'lucide-react';
-import { Card, Badge } from '@/components/ui';
+import { Card } from '@/components/ui';
 import { PieChart, BarChart } from '@/components/charts';
 import { useRetentionAnalysis } from '@/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -21,11 +21,7 @@ export function RetentionPage() {
   const { data, loading, error, refetch } = useRetentionAnalysis();
 
   // Get unique buyer types
-  const buyerTypes = useMemo(() => {
-    if (!data) return [];
-    const types = new Set(data.map((c: any) => c.original_buyer_type).filter(Boolean));
-    return Array.from(types).sort();
-  }, [data]);
+
 
   const [selectedBuyerType, setSelectedBuyerType] = useState<string>('all');
 

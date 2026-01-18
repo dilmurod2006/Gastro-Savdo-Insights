@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { AlertTriangle, Building, Package, ShieldAlert } from 'lucide-react';
-import { Card, Table, Badge, Select, ErrorState } from '@/components/ui';
+import { Card, Table, Badge, ErrorState } from '@/components/ui';
 import { PieChart, RadarChart } from '@/components/charts';
 import { useTheme } from '@/contexts';
 import { useSupplierRisk } from '@/hooks';
@@ -8,16 +7,9 @@ import { cn } from '@/utils/helpers';
 import { formatNumber, formatPercent } from '@/utils/formatters';
 import type { SupplierRisk as SupplierRiskType } from '@/types';
 
-const RISK_THRESHOLD_OPTIONS = [
-  { value: 0.3, label: 'Yuqori risk (>30%)' },
-  { value: 0.5, label: "O'rta risk (>50%)" },
-  { value: 0.7, label: 'Past risk (>70%)' },
-];
-
 export function RiskAnalysisPage() {
   const { theme } = useTheme();
-  const [threshold, setThreshold] = useState(0.3);
-  const { data, loading, error, refetch } = useSupplierRisk(threshold);
+  const { data, loading, error, refetch } = useSupplierRisk(0.3);
 
   // Risk level distribution
   const riskLevels = data

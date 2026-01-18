@@ -395,6 +395,15 @@ class SalesAnalyticsService(BaseAnalyticsService):
     
     def get_territory_performance(self) -> AnalyticsResponse:
         """
+        Get sales performance by territory
+        
+        Returns:
+            Territory performance response
+        """
+        logger.info("Analyzing territory performance")
+        data = self.repository.get_territory_sales_analysis()
+        return self.format_response(
+            data,
             "Territory sales analysis completed"
         )
     

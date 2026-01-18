@@ -7,7 +7,7 @@ import { cn } from '@/utils/helpers';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import { CHART_COLORS } from '@/utils/constants';
 import { Crown, Users, TrendingUp, UserPlus, AlertTriangle, UserX, Download, ArrowLeft, Filter, X } from 'lucide-react';
-import type { RFMCustomer } from '@/types';
+
 
 // Segment configuration with icons
 const SEGMENT_CONFIG: Record<string, { color: string; icon: React.ElementType; description: string }> = {

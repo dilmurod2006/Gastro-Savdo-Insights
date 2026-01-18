@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMarketBasket } from '@/hooks';
 import { Card } from '@/components/ui/Card';
-import { MarketBasketItem } from '@/types/analytics.types';
+
 import { ArrowLeft, Link2, ShoppingCart, TrendingUp, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

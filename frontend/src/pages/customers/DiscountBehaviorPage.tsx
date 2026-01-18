@@ -32,11 +32,7 @@ export function DiscountBehaviorPage() {
   const [selectedSegment, setSelectedSegment] = useState<string>('all');
 
   // Get unique segments for filter
-  const segments = useMemo(() => {
-    if (!data) return [];
-    const uniqueSegments = new Set(data.map((c: any) => c.behavior_segment).filter(Boolean));
-    return Array.from(uniqueSegments).sort();
-  }, [data]);
+
 
   const filteredData = useMemo(() => {
     if (!data) return [];

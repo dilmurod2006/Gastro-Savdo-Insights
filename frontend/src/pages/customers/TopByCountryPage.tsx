@@ -1,7 +1,7 @@
 import { Globe, DollarSign, Users, ShoppingCart, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui';
 import { BarChart, PieChart } from '@/components/charts';
-import { useTheme } from '@/contexts';
+
 import { useTopByCountry } from '@/hooks';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/utils/helpers';
@@ -10,7 +10,7 @@ import { CHART_COLORS } from '@/utils/constants';
 
 export function TopByCountryPage() {
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  // const { theme } = useTheme(); // Unused
   const { data, loading, error, refetch } = useTopByCountry();
 
   // Professional PieChart: TOP 6 + "Boshqalar" guruhi
