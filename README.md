@@ -109,6 +109,7 @@ Loyihaning to'liq texnik xujjatlari `/docs` papkasida joylashgan:
 - [📄 SQL Queries & Visualizations](docs/SQL_QUERIES.md) - Barcha analitik so'rovlar va ular frontendda qanday aks ettirilgani haqida batafsil ma'lumot.
 - [🏗️ Project Architecture](docs/PROJECT_DOCS.md) - Loyiha arxitekturasi va tuzilishi.
 - [🗄️ Database Schema & ERD](docs/DATABASE_SCHEMA.md) - Ma'lumotlar bazasi tuzilishi, ERD va to'liq jadvallar tavsifi.
+- [📊 Frontend Charts](docs/FRONTEND_CHARTS.md) - Frontend qismida ishlatilgan grafiklar (Charts) va ularning vazifalari.
 
 ---
 
