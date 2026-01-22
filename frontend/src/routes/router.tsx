@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { LoginPage, TwoFactorPage, DashboardPage } from '@/pages';
+import { DashboardPage } from '@/pages';
 import {
   TopRevenuePage,
   ABCAnalysisPage,
@@ -33,7 +33,7 @@ import {
 import { EfficiencyPage } from '@/pages/shipping';
 import { MainLayout } from '@/components/layout';
 import { ProtectedRoute } from './ProtectedRoute';
-import { PublicRoute } from './PublicRoute';
+
 
 /**
  * Layout wrapper for protected routes
@@ -54,18 +54,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <Navigate to="/dashboard" replace />,
   },
-  {
-    path: '/login',
-    element: (
-      <PublicRoute>
-        <LoginPage />
-      </PublicRoute>
-    ),
-  },
-  {
-    path: '/2fa-verify',
-    element: <TwoFactorPage />,
-  },
+
   // Protected routes with MainLayout
   {
     element: <ProtectedLayout />,

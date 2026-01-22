@@ -109,44 +109,46 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6">
-        <Card title="Daromad tendensiyasi" description="Oylik daromad ko'rsatkichlari">
-          <div className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip 
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                            Oy: {label}
-                          </p>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                            Daromad: <span className="text-emerald-500">${payload[0].value?.toLocaleString()}</span>
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3} 
-                  dot={{ r: 4 }} 
-                  activeDot={{ r: 8 }} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
+      {kpiData && (
+        <div className="grid grid-cols-1 gap-6">
+          <Card title="Daromad tendensiyasi" description="Oylik daromad ko'rsatkichlari">
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip 
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                              Oy: {label}
+                            </p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              Daromad: <span className="text-emerald-500">${payload[0].value?.toLocaleString()}</span>
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3} 
+                    dot={{ r: 4 }} 
+                    activeDot={{ r: 8 }} 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

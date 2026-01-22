@@ -8,8 +8,8 @@ import { router } from '@/routes';
  */
 function App(): JSX.Element {
   return (
-    <ThemeProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <ThemeProvider>
         <SidebarProvider>
           <RouterProvider router={router} />
           <Toaster
@@ -35,8 +35,8 @@ function App(): JSX.Element {
             }}
           />
         </SidebarProvider>
-      </AuthProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

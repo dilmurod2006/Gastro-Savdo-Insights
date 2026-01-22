@@ -88,6 +88,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.main_url,
+        "https://gastro-analytics.uz",
+        "https://www.gastro-analytics.uz",
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:5174",

@@ -1,4 +1,4 @@
-# Gastro-Savdo-Insights - SQL So'rovlar Hujjati
+# Gastro-Savdo-Insights Ma'lumotlar omboriga oid 20ta savol - SQL So'rovlar Hujjati
 
 ---
 
@@ -11,7 +11,7 @@
 5. [RFM Mijoz Segmentatsiyasi](#5-rfm-mijoz-segmentatsiyasi)
 6. [Yetkazib Beruvchi Samaradorligi](#6-yetkazib-beruvchi-samaradorligi)
 7. [Birga Sotilgan Mahsulotlar Tahlili](#7-birga-sotilgan-mahsulotlar-tahlili)
-8. [Xodimlar Ierarxiyasi va Jamoaviy Sotuvlar](#8-xodimlar-ierarxiyasi-va-jamoaviy-sotuvlar)
+8. [Jamoaviy Sotuvlar](#8-xodimlar-ierarxiyasi-va-jamoaviy-sotuvlar)
 9. [Yuk Tashuvchi Samaradorligi](#9-yuk-tashuvchi-samaradorligi)
 10. [Mamlakat va Kategoriya Bo'yicha Pivot Jadval](#10-mamlakat-va-kategoriya-boyicha-pivot-jadval)
 11. [Yillik O'sish va 3 Oylik Harakatlanuvchi O'rtacha](#11-yillik-osish-va-3-oylik-harakatlanuvchi-ortacha)
@@ -27,11 +27,203 @@
 
 ---
 
-## 1. TOP Daromadli Mahsulotlar
+<!-- 1-savol uchun matn va tushuntirishlar ## 1. TOP Daromadli Mahsulotlar Tahlili-->
+
+## 1. TOP Daromadli Mahsulotlar Tahlili
 
 **Maqsad:** Eng ko'p daromad keltiradigan mahsulotlarni aniqlash.
 
-**Qaytaradi:** Mahsulot nomi, kategoriyasi, yetkazib beruvchisi, jami sotilgan miqdor va daromad.
+> **_Qaysi mahsulotlar eng ko'p pul keltiradi?_**
+>
+> **_Qaysi mahsulotlarga e'tibor qaratish kerak?_**
+
+### So'rovni Bosqichma-Bosqich Tahlil Qilamiz
+
+#### 1-BOSQICH: CTE - Ma'lumotlarni Yig'ish
+
+```sql
+WITH ProductRevenue AS (
+    SELECT
+        p.productId,
+        p.productName AS product_name,
+        c.categoryName AS category_name,
+        s.companyName AS supplier_name,
+
+        -- Jami sotilgan miqdor
+        SUM(od.quantity) AS total_quantity,
+
+        -- Jami daromad (chegirmani hisobga olgan holda)
+        SUM(od.unitPrice * od.quantity * (1 - od.discount)) AS total_revenue,
+
+        -- Nechta buyurtmada sotilgan
+        COUNT(DISTINCT od.orderId) AS order_count
+
+    FROM Product p
+    INNER JOIN Category c ON p.categoryId = c.categoryId
+    INNER JOIN Supplier s ON p.supplierId = s.supplierId
+    INNER JOIN OrderDetail od ON p.productId = od.productId
+    GROUP BY p.productId, p.productName, c.categoryName, s.companyName
+)
+```
+
+##### Daromad Formulasi Tushuntirish
+
+```sql
+SUM(od.unitPrice * od.quantity * (1 - od.discount))
+```
+
+##### Misol:
+
+| Narx ($) | Miqdor | Chegirma   | Hisoblash formulasi  | Natija ($) |
+| -------- | ------ | ---------- | -------------------- | ---------- |
+| 100      | 5      | 10% (0.1)  | 100 × 5 × (1 - 0.1)  | 450        |
+| 100      | 5      | 0% (0)     | 100 × 5 × (1 - 0)    | 500        |
+| 100      | 5      | 25% (0.25) | 100 × 5 × (1 - 0.25) | 375        |
+
+#### 2-BOSQICH: Asosiy SELECT - Tahlil va Reyting
+
+```sql
+SELECT
+    product_name,
+    category_name,
+    supplier_name,
+    total_quantity,
+    ROUND(total_revenue, 2) AS total_revenue,
+    order_count,
+
+    -- Reyting berish
+    RANK() OVER (ORDER BY total_revenue DESC) AS revenue_rank,
+
+    -- Umumiy daromaddan foiz
+    ROUND(total_revenue * 100.0 / SUM(total_revenue) OVER (), 2) AS revenue_percentage
+
+FROM ProductRevenue
+ORDER BY total_revenue DESC
+LIMIT {limit}
+```
+
+##### Window Functions Tushuntirish
+
+A) `RANK() OVER (ORDER BY total_revenue DESC)`
+
+##### Bu har bir mahsulotga reyting beradi:
+
+| RANK | Mahsulot  | Daromad ($) |
+| ---- | --------- | ----------- |
+| 1    | Coca-Cola | 50,000      |
+| 1    | Pepsi     | 50,000      |
+| 3    | Fanta     | 30,000      |
+| 4    | Sprite    | 25,000      |
+
+> **E'tibor bering:** Coca-Cola va Pepsi teng, shuning uchun ikkalasi ham 1-o'rin. Keyingi raqam 3 (2 emas).
+
+B) `SUM(total_revenue) OVER ()`
+
+##### Bu barcha mahsulotlar daromadini qo'shadi:
+
+```sql
+-- OVER () - hech qanday shart yo'q, hammasi qo'shiladi
+SUM(total_revenue) OVER ()  -- = $155,000 (jami)
+
+```
+
+##### Foiz hisoblash:
+
+```sql
+total_revenue \* 100.0 / SUM(total_revenue) OVER ()
+
+-- Misol: Coca-Cola
+50,000 \* 100.0 / 155,000 = 32.26%
+
+```
+
+## Natija Qanday Ko'rinadi?
+
+| Mahsulot      | Kategoriya | Yetkazuvchi  | Miqdor | Daromad  | Buyurtmalar | Rank | Foiz  |
+| ------------- | ---------- | ------------ | ------ | -------- | ----------- | ---- | ----- |
+| Côte de Blaye | Beverages  | Aux joyeux   | 623    | $141,396 | 35          | 1    | 11.2% |
+| Thüringer     | Meat       | Plutzer      | 746    | $80,368  | 44          | 2    | 6.4%  |
+| Raclette      | Dairy      | Gai pâturage | 1496   | $71,155  | 67          | 3    | 5.6%  |
+
+## Biznes Qiymati
+
+### 1. Pareto Prinsipi (80/20 Qoidasi)
+
+> **_Odatda 20% mahsulotlar 80% daromad keltiradi_**
+
+Bu so'rov orqali buni aniqlash mumkin:
+
+| Top Mahsulotlar | Daromad Foizi |
+| --------------- | ------------- |
+| Top 10          | 45%           |
+| Top 20          | 65%           |
+| Top 30          | 80%           |
+
+### 2. Strategik Qarorlar
+
+**Yuqori reytingdagi mahsulotlar uchun:**
+
+- Zaxirada doimo bo'lishi kerak
+- Marketing budjeti ko'proq ajratiladi
+- Yetkazib beruvchi bilan mustahkam aloqa
+
+**Past reytingdagi mahsulotlar uchun:**
+
+- Ishlab chiqarishni to'xtatish mumkinmi?
+- Narxni o'zgartirish kerakmi?
+- Marketing strategiyasini o'zgartirish
+
+### 3. Kategoriya va Yetkazuvchi Tahlili
+
+So'rov natijasidan ko'rish mumkin:
+
+Savol: Qaysi kategoriya eng daromadli?
+Savol: Qaysi yetkazib beruvchi eng muhim?
+
+### JOIN'lar Tushuntirish
+
+```sql
+FROM Product p
+INNER JOIN Category c ON p.categoryId = c.categoryId      -- Kategoriya nomi
+INNER JOIN Supplier s ON p.supplierId = s.supplierId      -- Yetkazuvchi nomi
+INNER JOIN OrderDetail od ON p.productId = od.productId   -- Sotuvlar ma'lumoti
+```
+
+**Vizual ko'rinishi:**
+
+```
+Product ──────┬───── Category
+    │         │
+    │         └───── Supplier
+    │
+    └───────────── OrderDetail (sotuvlar)
+```
+
+### RANK vs ROW_NUMBER vs DENSE_RANK
+
+| Daromad ($) | RANK | ROW_NUMBER | DENSE_RANK |
+| ----------- | ---- | ---------- | ---------- |
+| 50,000      | 1    | 1          | 1          |
+| 50,000      | 1    | 2          | 1          |
+| 30,000      | 3    | 3          | 2          |
+| 25,000      | 4    | 4          | 3          |
+
+- `RANK()` - Teng qiymatlardan keyin o'tkazib yuboradi (1,1,3,4)
+- `ROW_NUMBER` - Har doim ketma-ket (1,2,3,4)
+- `DENSE_RANK` - O'tkazib yubormaydi (1,1,2,3)
+
+### 📌 Xulosa
+
+Quyidagi so‘rov biznes qarorlarini qabul qilishda muhim strategik ma’lumotlarni taqdim etadi:
+
+| Ma'lumot turi      | Biznesdagi foydalanish                             |
+| ------------------ | -------------------------------------------------- |
+| 🥇 Top mahsulotlar | Inventar boshqaruvi va ombor optimallashtirish     |
+| 📊 Daromad foizi   | Marketing byudjetini samarali taqsimlash           |
+| 🗂️ Kategoriya      | Assortiment va mahsulot strategiyasini belgilash   |
+| 🚚 Yetkazuvchi     | Ta’minot zanjirini boshqarish va optimallashtirish |
+
+> **Qaytaradi:** Mahsulot nomi, kategoriyasi, yetkazib beruvchisi, jami sotilgan miqdor va daromad.
 
 ```sql
 WITH ProductRevenue AS (
@@ -71,9 +263,43 @@ LIMIT {limit}
 
 ---
 
+<!-- 2-savol matnlari va tushuntirishlari ## 2. Xodimlarning Oylik Sotuv Ko'rsatkichlari -->
+
 ## 2. Xodimlarning Oylik Sotuv Ko'rsatkichlari
 
 **Maqsad:** Har bir xodimning oylik savdo ko'rsatkichlarini kuzatish.
+
+> ### Bu So'rov Nima Uchun Kerak?
+>
+> Har bir kompaniya bilishi kerak:
+>
+> **_Qaysi xodim qancha sotyapti?_**
+>
+> **_Kimning ko'rsatkichlari o'smoqda yoki tushmoqda?_**
+>
+> **_Bonus kimga berish kerak?_**
+
+### So'rovni Bosqichma-Bosqich Tahlil Qilamiz
+
+> #### 1. CONCAT() - Ismlarni Birlashtirish
+>
+> ```sql
+> CONCAT(e.firstname, ' ', e.lastname) AS employee_name
+>
+> ```
+
+#### Misol:
+
+| firstname | lastname | CONCAT natijasi |
+| --------- | -------- | --------------- |
+| John      | Smith    | John Smith      |
+| Ali       | Valiyev  | Ali Valiyev     |
+
+> Nima uchun kerak?
+>
+> Hisobotda "John" va "Smith" alohida emas, "John Smith" ko'rinadi
+>
+> Professional ko'rinish
 
 **Qaytaradi:** Xodim ismi, lavozimi, yil, oy, buyurtmalar soni, oylik daromad va o'rtacha buyurtma qiymati.
 
@@ -102,6 +328,8 @@ ORDER BY e.employeeId, order_year, order_month
 - Bir nechta `GROUP BY` - ko'p o'lchovli guruhlash
 
 ---
+
+<!-- 3-savol uchun tushuntirishlar va matnlar ## 3. Har Bir Mamlakat Bo'yicha Eng Yaxshi Mijoz -->
 
 ## 3. Har Bir Mamlakat Bo'yicha Eng Yaxshi Mijoz
 
@@ -149,6 +377,8 @@ ORDER BY total_spent DESC
 
 ---
 
+<!-- 4-savol uchun tushuntirishlar va matnlar ## 4. Kategoriya Bo'yicha Oylik O'sish -->
+
 ## 4. Kategoriya Bo'yicha Oylik O'sish
 
 **Maqsad:** Har bir kategoriyaning oydan oyga o'sish foizini hisoblash.
@@ -188,6 +418,8 @@ ORDER BY category_name, sales_month
 - `NULLIF()` - nolga bo'lishdan himoya
 
 ---
+
+<!-- 5-savol uchun tushuntirishlar va matnlar ## 5. RFM Mijoz Segmentatsiyasi -->
 
 ## 5. RFM Mijoz Segmentatsiyasi
 
@@ -246,6 +478,8 @@ ORDER BY monetary DESC
 
 ---
 
+<!-- 6-savol uchun tushuntirishlar va matnlar ## 6. Yetkazib Beruvchi Samaradorligi -->
+
 ## 6. Yetkazib Beruvchi Samaradorligi
 
 **Maqsad:** Har bir yetkazib beruvchining ishlash samaradorligini tahlil qilish.
@@ -284,6 +518,8 @@ ORDER BY avg_lead_time_days ASC
 - `MIN/MAX/AVG` - statistik ko'rsatkichlar
 
 ---
+
+<!-- 7-savol uchun tushuntirishlar va matnlar ## 7. Birga Sotilgan Mahsulotlar Tahlili (Market Basket) -->
 
 ## 7. Birga Sotilgan Mahsulotlar Tahlili (Market Basket)
 
@@ -324,6 +560,8 @@ LIMIT {limit}
 - Subquery - jami buyurtmalar sonini olish
 
 ---
+
+<!-- 8-savol uchun tushuntirishlar va matnlar ## 8. Xodimlar Ierarxiyasi va Jamoaviy Sotuvlar -->
 
 ## 8. Xodimlar Ierarxiyasi va Jamoaviy Sotuvlar
 
@@ -380,6 +618,8 @@ ORDER BY eh.level, total_revenue DESC
 
 ---
 
+<!-- 9-savol uchun tushuntirishlar va matnlar ## 9. Yuk Tashuvchi Samaradorligi -->
+
 ## 9. Yuk Tashuvchi Samaradorligi
 
 **Maqsad:** Har bir yuk tashuvchining ishlash samaradorligini baholash.
@@ -420,6 +660,8 @@ ORDER BY total_shipments DESC
 
 ---
 
+<!-- 10-savol uchun tushuntirishlar va matnlar ## 10. Mamlakat va Kategoriya Bo'yicha Pivot Jadval -->
+
 ## 10. Mamlakat va Kategoriya Bo'yicha Pivot Jadval
 
 **Maqsad:** Har bir mamlakatdagi sotuvlarni kategoriyalar bo'yicha ko'rsatish.
@@ -453,6 +695,8 @@ ORDER BY total_revenue DESC
 - Manual pivot - MySQL da `PIVOT` funksiyasi yo'qligi uchun
 
 ---
+
+<!-- 11-savol uchun tushuntirishlar va matnlar ## 11. Yillik O'sish va 3 Oylik Harakatlanuvchi O'rtacha -->
 
 ## 11. Yillik O'sish va 3 Oylik Harakatlanuvchi O'rtacha
 
@@ -493,6 +737,8 @@ ORDER BY sales_month
 
 ---
 
+<!-- 12-savol uchun tushuntirishlar va matnlar ## 12. To'xtatilgan Mahsulotlar Tahlili -->
+
 ## 12. To'xtatilgan Mahsulotlar Tahlili
 
 **Maqsad:** Ishlab chiqarish to'xtatilgan mahsulotlarni tahlil qilish.
@@ -528,6 +774,8 @@ ORDER BY product_count DESC
 - Zaxira qiymatini hisoblash
 
 ---
+
+<!-- 13-savol uchun tushuntirishlar va matnlar ## 13. Mijozlarni Saqlab Qolish Tahlili -->
 
 ## 13. Mijozlarni Saqlab Qolish Tahlili
 
@@ -577,6 +825,8 @@ ORDER BY total_orders DESC
 
 ---
 
+<!-- 14-savol uchun tushuntirishlar va matnlar ## 14. Hudud va Mintaqa Sotuvlari Tahlili -->
+
 ## 14. Hudud va Mintaqa Sotuvlari Tahlili
 
 **Maqsad:** Hududlar va mintaqalar bo'yicha sotuv ko'rsatkichlarini tahlil qilish.
@@ -613,6 +863,8 @@ ORDER BY r.regionId, total_revenue DESC
 - Geografik ierarxiya tahlili
 
 ---
+
+<!-- 15-savol uchun tushuntirishlar va matnlar ## 15. Chegirma Ta'siri Tahlili -->
 
 ## 15. Chegirma Ta'siri Tahlili
 
@@ -670,6 +922,8 @@ LIMIT {limit}
 
 ---
 
+<!-- 16-savol uchun tushuntirishlar va matnlar ## 16. ABC Mahsulotlar Tahlili -->
+
 ## 16. ABC Mahsulotlar Tahlili
 
 **Maqsad:** Mahsulotlarni daromad bo'yicha A, B, C toifalariga ajratish (Pareto prinsipi).
@@ -722,6 +976,8 @@ ORDER BY total_revenue DESC
 
 ---
 
+<!-- 17-savol uchun tushuntirishlar va matnlar ## 17. Hafta Kunlari Bo'yicha Sotuvlar -->
+
 ## 17. Hafta Kunlari Bo'yicha Sotuvlar
 
 **Maqsad:** Qaysi kunlarda ko'proq sotuv bo'lishini aniqlash.
@@ -753,6 +1009,8 @@ ORDER BY day_of_week
 - Marketing kampaniyalari uchun optimal kunlarni aniqlash
 
 ---
+
+<!-- 18-savol uchun tushuntirishlar va matnlar ## 18. Mijozlar Chegirma Xulq-atvori -->
 
 ## 18. Mijozlar Chegirma Xulq-atvori
 
@@ -806,6 +1064,8 @@ LIMIT {limit}
 - `Discount Hunter` va `Full Price Buyer` toifalarini aniqlash
 
 ---
+
+<!-- 19-savol uchun tushuntirishlar va matnlar ## 19. Yetkazib Beruvchi Xatarlar Tahlili -->
 
 ## 19. Yetkazib Beruvchi Xatarlar Tahlili
 
@@ -863,6 +1123,8 @@ ORDER BY sd.category_name, revenue_share_percent DESC
 - Diversifikatsiya darajasini baholash
 
 ---
+
+<!-- 20-savol uchun tushuntirishlar va matnlar ## 20. Biznes KPI Dashboard -->
 
 ## 20. Biznes KPI Dashboard
 
@@ -955,6 +1217,8 @@ FROM SalesMetrics sm, ProductMetrics pm, EmployeePerformance ep, ShippingMetrics
 - Dashboard uchun yagona so'rov
 
 ---
+
+<!-- Xulosa - ## 🔧 Ishlatiladigan SQL Texnikalar Xulosa -->
 
 ## 🔧 Ishlatiladigan SQL Texnikalar Xulosa
 
